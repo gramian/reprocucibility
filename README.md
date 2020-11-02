@@ -8,6 +8,8 @@ The experiment source codes can be tested via the `RUNME.m` in MATLAB or OCTAVE,
 
 ## Table of Contents
 
+* **[HimO15b]** C. Himpe, M. Ohlberger: "**Data-driven combined state and parameter reduction for inverse problems**", 2015. [`doi:10.1007/s10444-015-9420-5`](https://doi.org/10.1007/s10444-015-9420-5)
+
 * **[HimO15]** C. Himpe, M. Ohlberger: "**The Empirical Cross Gramian for Parametrized Nonlinear Systems**", 2015. [`doi:10.1016/j.ifacol.2015.05.163`](https://doi.org/10.1016/j.ifacol.2015.05.163)
 * **[HimO14b]** C. Himpe, M. Ohlberger: "**Combined State and Parameter Reduction**", 2014. [`doi:10.1002/pamm.201410393`](https://doi.org/10.1002/pamm.201410393)
 * **[HimO14a]** C. Himpe, M. Ohlberger: "**Model Reduction for Complex Hyperbolic Networks**", 2014. [`doi:10.1109/ECC.2014.6862188`](https://doi.org/10.1109/ECC.2014.6862188)

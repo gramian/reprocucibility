@@ -5,6 +5,8 @@ function RUNME(id)
                'HimO14a', ...     % Model Reduction for Complex Hyperbolic Networks
                'HimO14b', ...     % Combined State and Parameter Reduction
                'HimO15', ...      % The Empirical Cross Gramian for Parametrized Nonlinear Systems
+               ...
+               'HimO15b', ...     % Data-driven combined state and parameter reduction for inverse problems
                ... % tbc
               };
 
@@ -12,7 +14,7 @@ function RUNME(id)
 
        for m = myWorks
 
-           RUNME(m);
+           RUNME(m{:});
        end%for
 
        return;
@@ -49,6 +51,10 @@ function RUNME(id)
         case 'HimO15'
             mathmod();
             plot_mathmod;
+
+        case 'HimO15b'
+            acom();
+            out_acom;
 
     end%switch
 
