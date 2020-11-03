@@ -7,6 +7,7 @@ function RUNME(id)
                'HimO15', ...      % The Empirical Cross Gramian for Parametrized Nonlinear Systems
                ...
                'HimO15b', ...     % Data-driven combined state and parameter reduction for inverse problems
+               'HimO16', ...      % A note on the cross Gramian for non-symmetric systems
                ... % tbc
               };
 
@@ -55,6 +56,15 @@ function RUNME(id)
         case 'HimO15b'
             acom();
             out_acom;
+
+        case 'HimO16'
+            nonsym(0);
+            nonsym(1);
+            nonsym(2);
+            nonsym(3);
+            nonsym(4);
+            nonsym(5);
+
 
     end%switch
 
