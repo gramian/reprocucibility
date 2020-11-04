@@ -8,7 +8,8 @@ The experiment source codes can be tested via the `RUNME.m` in MATLAB or OCTAVE,
 
 ## Table of Contents
 
-* **[HimO16]** **[HimO16]** C. Himpe, M. Ohlberger: "[**A note on the cross Gramian for non-symmetric systems**](HimO16.pdf)", 2016. `doi:10.1080/21642583.2016.1215273`
+* **[FehHHetal16]** J. Fehr, J. Heiland, C. Himpe, J. Saak: "[**Best Practices for Replicability, Reproducibility and Reusability of Computer-Based Experiments Exemplified by Model Reduction Software**](FehHHetal16.pdf)", 2016. `doi:10.3934/Math.2016.3.261`
+* **[HimO16]** C. Himpe, M. Ohlberger: "[**A note on the cross Gramian for non-symmetric systems**](HimO16.pdf)", 2016. `doi:10.1080/21642583.2016.1215273`
 * **[HimO15b]** C. Himpe, M. Ohlberger: "**Data-driven combined state and parameter reduction for inverse problems**", 2015. [`doi:10.1007/s10444-015-9420-5`](https://doi.org/10.1007/s10444-015-9420-5)
 
 * **[HimO15]** C. Himpe, M. Ohlberger: "**The Empirical Cross Gramian for Parametrized Nonlinear Systems**", 2015. [`doi:10.1016/j.ifacol.2015.05.163`](https://doi.org/10.1016/j.ifacol.2015.05.163)

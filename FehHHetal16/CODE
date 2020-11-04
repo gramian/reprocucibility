@@ -1,0 +1,20 @@
+name: tangential IRKA for MIMO systems
+shortname: tIRKA
+version: 1.0
+release-date: 2016-06-10
+id-type: doi
+id: 10.5281/zenodo.55297
+authors: Jörg Fehr and Jens Saak
+orcids: 0000-0003-2850-1440 and 0000-0001-5567-9637
+topic: Model Reduction
+type: MATLAB function
+license: 3-Clause BSD
+license-type: Open
+repository: gitlab.mpi-magdeburg.mpg.de/saak/best_practice_IRKA
+repository-type: git
+languages: Matlab
+dependencies: GNU Octave >= 3.8, MATLAB >= 2011b
+systems: Linux, Windows
+website: modelreduction.org
+keywords: interpolatory model reduction, tangential interpolation
+associated: arXiv:1607.01191
