@@ -9,6 +9,8 @@ function RUNME(id)
                'HimO15b', ...     % Data-driven combined state and parameter reduction for inverse problems
                'HimO16', ...      % A note on the cross Gramian for non-symmetric systems
                'FehHHetal16', ... % Best Practices for Replicability, Reproducibility and Reusability of Computer-Based Experiments Exemplified by Model Reduction Software
+               ...
+               'HimO17', ...      % Cross-Gramian-Based Model Reduction: A Comparison
                ... % tbc
               };
 
@@ -68,6 +70,12 @@ function RUNME(id)
 
         case 'FehHHetal16'
             cd('FehHHetal16');
+            runme = @RUNME;
+            cd('..');
+            runme();
+
+        case 'HimO17'
+            cd('HimO17');
             runme = @RUNME;
             cd('..');
             runme();

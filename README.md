@@ -1,12 +1,14 @@
 # Reproducibility
 
-This repository _will list_ all my publications and bundles the publications pdfs (if permitted) and associated code archives (if permitted).
+This repository _will_ list all my publications and bundles the publications pdfs (if permitted) and associated code archives (if permitted).
 
 The purpose of this repository is to facilitate reproducibility of my numerical experiments.
 
 The experiment source codes can be tested via the `RUNME.m` in MATLAB or OCTAVE, by providing the publication key as argument.
 
 ## Table of Contents
+
+* **[HimO17]** C. Himpe, M. Ohlberger: "**Cross-Gramian-Based Model Reduction: A Comparison**", 2017. [`doi:10.1007/978-3-319-58786-8_17`](https://doi.org/10.1007/978-3-319-58786-8_17)
 
 * **[FehHHetal16]** J. Fehr, J. Heiland, C. Himpe, J. Saak: "[**Best Practices for Replicability, Reproducibility and Reusability of Computer-Based Experiments Exemplified by Model Reduction Software**](FehHHetal16.pdf)", 2016. `doi:10.3934/Math.2016.3.261`
 * **[HimO16]** C. Himpe, M. Ohlberger: "[**A note on the cross Gramian for non-symmetric systems**](HimO16.pdf)", 2016. `doi:10.1080/21642583.2016.1215273`
