@@ -8,6 +8,8 @@ The experiment source codes can be tested via the `RUNME.m` in MATLAB or OCTAVE,
 
 ## Table of Contents
 
+* **[HimLRetal17]** C. Himpe, T. Leibner, S. Rave, J. Saak: "**Fast Low-Rank Empirical Cross Gramians**", 2017. [`doi:10.1002/pamm.201710388`](https://doi.org/10.1002/pamm.201710388)
+
 * **[HimO17]** C. Himpe, M. Ohlberger: "**Cross-Gramian-Based Model Reduction: A Comparison**", 2017. [`doi:10.1007/978-3-319-58786-8_17`](https://doi.org/10.1007/978-3-319-58786-8_17)
 
 * **[FehHHetal16]** J. Fehr, J. Heiland, C. Himpe, J. Saak: "[**Best Practices for Replicability, Reproducibility and Reusability of Computer-Based Experiments Exemplified by Model Reduction Software**](FehHHetal16.pdf)", 2016. `doi:10.3934/Math.2016.3.261`

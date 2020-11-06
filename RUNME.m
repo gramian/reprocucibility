@@ -11,6 +11,8 @@ function RUNME(id)
                'FehHHetal16', ... % Best Practices for Replicability, Reproducibility and Reusability of Computer-Based Experiments Exemplified by Model Reduction Software
                ...
                'HimO17', ...      % Cross-Gramian-Based Model Reduction: A Comparison
+               ...
+               'HimLRetal17', ... % Fast Low-Rank Empirical Cross Gramians
                ... % tbc
               };
 
@@ -79,6 +81,14 @@ function RUNME(id)
             runme = @RUNME;
             cd('..');
             runme();
+
+        case 'HimLRetal17'
+            cd('HimLRetal17');
+            runme = @RUNME;
+            plotme = @PLOTME;
+            cd('..');
+            runme();
+            plotme();
 
     end%switch
 
