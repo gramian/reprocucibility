@@ -13,6 +13,8 @@ function RUNME(id)
                'HimO17', ...      % Cross-Gramian-Based Model Reduction: A Comparison
                ...
                'HimLRetal17', ... % Fast Low-Rank Empirical Cross Gramians
+               ...
+               'Him18', ...       % emgr - Empirical Gramian Framework
                ... % tbc
               };
 
@@ -89,6 +91,12 @@ function RUNME(id)
             cd('..');
             runme();
             plotme();
+
+        case 'Him18'
+            cd('Him18');
+            runme = @RUNME;
+            cd('..');
+            runme();        
 
     end%switch
 
