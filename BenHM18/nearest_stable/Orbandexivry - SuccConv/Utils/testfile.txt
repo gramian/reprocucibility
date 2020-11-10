@@ -1,0 +1,760 @@
+\documentclass[twocolumn]{autart}
+
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage[caption=false]{subfig}
+%\usepackage[notref,notcite]{showkeys}
+
+
+
+\graphicspath{{figures/}}
+
+\begin{document}
+
+\begin{frontmatter}
+
+\title{Nearest Stable System \\ Using Successive Convex Approximations}
+
+\thanks{Corresponding author F.-X.~Orban de Xivry. Tel. +3210472376. Fax +3210472180.
+}
+
+\author[Euler]{Francois-Xavier Orbandexivry}\ead{fx.orban@uclouvain.be}, 
+\author[Euler]{Yurii Nesterov}\ead{yurii.nesterov@uclouvain.be}, 
+\author[Euler]{Paul Van Dooren}\ead{paul.vandooren@uclouvain.be}
+
+\address[Euler]{Department of Mathematical Engineering, Institute of Information and Communication Technologies, Electronics and Applied Mathematics (ICTEAM), Universit\'e catholique de Louvain, Av. Georges Lema\^itre 4, B-1348 Louvain-la-Neuve, Belgium}
+
+\begin{keyword}
+Lyapunov stability, time-invariant systems, polynomials, inner convex approximation
+\end{keyword}
+
+\begin{abstract}
+Stability is a crucial property in the study of dynamical systems. We focus on the problem of enforcing the stability of a system \emph{a posteriori}. The system can be a matrix or a polynomial either in continuous-time or in discrete-time. We present an algorithm that constructs a sequence of successive stable iterates that tend to a nearby stable approximation $X$ of a given system $A$. The stable iterates are obtained by projecting $A$ onto the convex approximations of the set of stable systems. Some possible applications for this method are correcting the error arising from some noise in system identification and a possible solver for bilinear matrix inequalities based on convex approximations. In the case of polynomials, a fair complexity is achieved by finding a closed form solution to first order optimality conditions.
+\end{abstract}
+
+\end{frontmatter}
+
+\section{Introduction}
+The question is to find the smallest perturbation that stabilizes a given unstable matrix $A$, or, equivalently, to find the closest stable matrix $X$ to a given unstable matrix $A$. This kind of problem occurs in system identification when one needs to identify a stable system from observations. Measurements being subject to truncation and noise, it may happen that the identified model is unstable. Our goal is then to correct those errors and obtain a suitable system to work with. 
+In this aspect the purpose of this technique differs fundamentally from the one of stabilizing by state or output feedback. Indeed, the purpose of stabilizing by feedback is to stabilize a system which was correctly modeled as unstable and hence the search for a proper feedback is required, whereas our algorithm provides a new tool that can correct measurement errors arising from the identification step by intrinsically modifying the identified system and finally obtain a stable model.
+For this, one needs to perturb $A$ so that \emph{all} its eigenvalues move to the stability region. The stability radius problem is related to this since there one looks for a perturbation that moves only \emph{one} eigenvalue outside the stability region, and this is clearly a simpler problem but complementary of ours. Similar complementary problems are for examples distance problems \cite{Higham:1989}, the structured singular value problem \cite{Packard:1993} and robust stability problems a recent reference of which is \cite{Zhou2011}.
+
+\vspace{-1em}
+\paragraph*{Problem setting}
+We can formulate our problem as 
+\begin{equation}
+\begin{aligned}
+\inf_{X}\ & \ \|X-A\|^2 \\
+s.t. \ \ \ & \ X \in \mathbb{S}^{n\times n}
+\end{aligned}
+\label{eq:duproblemedebase}
+\end{equation}
+where $\mathbb{S}^{n\times n}$ denotes the set of stable matrices.\\
+Such a problem arises in many contexts and with many variations. For example, the stabilization of transfer functions is widely studied \cite{Pintelon:2006,Pintelon:2006b,Lacy:2003} and different techniques are used. Other constraints than stability can be studied : in \cite{Coelho:2004} passivity of the transfer function is enforced. \\
+Virtually any norm could be used in (\ref{eq:duproblemedebase}). In this paper we chose to look for the nearest stable matrix in the sense of the coefficients of the matrix, and hence we use the Frobenius norm.\\
+Since applying a perturbation, even small, on the coefficients of the matrix can result in significant variations of all the eigenvalues, the closest stable matrix to $A$ may well have eigenvalues that are completely unrelated to those of $A$. Hence, one needs to consider the stable set of matrices in the space of coefficients. As we will see, this set is highly nonconvex and it is therefore not possible, generally speaking, to obtain a global optimal solution to our problem in a reasonable complexity. Moreover, the set $\mathbb{S}^{n\times n}$ of stable matrices is an open set, i.e., marginally stable matrices do not belong to the set, hence the search for an infimum in (\ref{eq:duproblemedebase}).\\
+In contrast with the matrix case where the Hessian of the barrier function is a $n^2\times n^2$ mapping, the Hessian of the barrier function defined for a polynomial instance belongs to $\mathbb{C}^{n\times n}$. This yields a more appealing theory, better computational properties and a decreased complexity. Our goal is thus to build an iterative algorithm of moderate complexity that will find a local solution to (\ref{eq:duproblemedebase}). In order to achieve this goal, we make ample use of the theory of self-concordant functions that enables us to build convex approximations of nonconvex sets. 
+
+To our knowledge, this kind of approach applied to our problem is new. However, the problem of finding the nearest stable system to an unstable one, is not. This question was addressed in the polynomial case by Moses and Liu \cite{Moses:1991}. They optimized the so called \emph{reflection coefficients} in order to obtain stabilized polynomials. The resulting algorithm provides good solutions to the problem along with a low complexity. But the technique developed in \cite{Moses:1991} has a limited use since it cannot be applied to other type of systems. Our theory on the other hand achieves equally good solutions, with a slightly higher complexity and is still perfectly suitable to other types of problems.
+Some closely related problem have been studied as well. In \cite{overton:2006}, Burke, Henrion, Lewis and Overton stabilize fixed-order controllers using nonsmooth, nonconvex optimization. In his thesis and related papers Tom D'haene \cite{Pintelon:2006b} stabilizes transfer functions in a given frequency band, but the optimization is carried out on the roots of the denominator whereas we concentrate on stabilizing the denominator of the transfer function with respect to its coefficients.
+
+As pointed out by a referee, the convex approximation that we define can also be viewed as a contribution to the work carried by various authors who have developed approximations of the stable sets \cite{Henrion:2010} or have described geometric and topological properties of the stable set \cite{Aguirre-Hernandez2009,Hinrichsen1995a,Duan1994}.
+
+\vspace{-1em}
+\paragraph*{Theoretical global optimum}In some cases the global optimal solution can be computed straight away. This happens when $A$ has a special structure and that this special structure is purposely kept in the final solution. For example, consider the very trivial case where $A$ and $X$ are diagonal matrices. Then the space of eigenvalues and the space of coefficients are identical and, in the continuous-time case, the solution is achieved when $A$ is projected on the cone of negative definite matrices in the sense of the $2$-norm. 
+
+The subject of perturbation bound on the eigenvalues of matrices is quite well developed in the literature \cite{bhatia:1987,sun:1996}. Let us detail some. We reproduce some of the results of Bhatia \cite{bhatia:1987} that are linked to our problem of interest.  Let $D_A$ and $D_X$ be diagonal matrices of the eigenvalues of $A$ and $X$. Then we define the distance between the eigenvalues of $A$ and $X$ as
+\begin{equation}
+d(D_A,D_X) = \min_{W \in \Pi} \ \|D_A-WD_XW^{-1}\|_F \ ,
+\label{eq:disteig}
+\end{equation}
+where $\Pi$ is the set of permutation matrices.
+Now if $A$ and $X$ are both normal it is proved that \cite{bhatia:1987,Higham:1989}
+\begin{equation}
+d(D_A,D_X) \leq \|A-X\|_F \ .
+\label{eq:boundnorm}
+\end{equation}
+As both $A$ and $X$ are normal, we can decompose them as 
+$$
+\begin{alignedat}{2}
+A &= V D_A V^* &\quad X &= U D_X U^* \ .
+\end{alignedat}
+$$
+Whilst this decomposition is given for $A$,  the choice of transformation $U$ for $X$ is free. The global solution $X_*$ to (\ref{eq:duproblemedebase}) is such that
+$$
+X^* = \arg \min_{X\in \mathbb{S}^{n\times n}} d(D_A,D_X) \ .
+$$
+Thus $X_*$ is the projection of $A$ on the cone of the negative definite normal matrices equipped with the $2$-norm. As all unitary, Hermitian and skew-Hermitian matrices are normal, inequality (\ref{eq:boundnorm}) also holds for them.\\
+In our case, we seek to find the nearest stable matrix to $A$ without keeping its particular structure.  
+Still we can find bounds on the minimal distance that can be achieved. For a matrix $X$ with no particular structure, we have in case $A$ is normal and $X$ is general \cite{sun:1996}
+\begin{equation}
+d(D_A,D_X) \leq c \|A-X\|_F \ ,
+\label{eq:boundnormns}
+\end{equation}
+and $c = \sqrt{n}$ is the smallest possible constant. In case $A$ is Hermitian, the constant $c$ improves to $\sqrt{2}$.
+As expected, the bounds are even trickier when either of the two matrices $A$ and $X$ are general. In this case, the book of Bhatia \cite{bhatia:1987} provides us with the following bound
+\begin{equation}
+d(D_A,D_X) \leq n (2M)^{1-\frac{1}{n}} \|A-X\|_F^{\frac{1}{n}} \ ,
+\label{eq:boundnonnorm}
+\end{equation}
+where $M = \max(\|A\|_F,\|X\|_F)$. Let us illustrate the consequences of these inequalities on our problem. Consider a discrete-time system whose dynamic is represented by the following matrix of size $n$
+$$
+A = aZ + b e_1 e_n^T \ ,
+%\begin{bmatrix}
+%& & & b\\ 
+%a & & & \\
+%& \ddots & & \\
+%& & a & 
+%\end{bmatrix}\ .
+$$
+where $a,b \in \mathbb{C}$, $Z$ is the lower shift matrix and $e_i$ is a vector of zeros with a $1$ at the $i$-th position.
+The eigenvalues of $A$ are distributed evenly on a circle centered at the origin. We suppose that $|a|$ and $|b|$ are greater than one, making $A$ unstable. If $|b| = |a|$, then $A$ is a normal matrix and the closest stable normal matrix is given by
+$$
+X = \tfrac{a}{|a|}Z + \tfrac{b}{|b|} e_1 e_n^T \ ,
+$$ 
+and the objective function equals
+\begin{equation}
+\|A-X\|_F = (|b|-1)\sqrt{n} \ .
+\label{eq:normality}
+\end{equation}
+Now if the normality of $X$ is not required, the smallest perturbation $\Delta b$ of $b$ such that the system becomes stable must satisfy $|b + \Delta b||a|^{n-1} = 1$, and we have
+\begin{equation}
+\|A-X\|_F = |b|-\frac{1}{|a|^{n-1}} \ .
+\label{eq:nonnormality}
+\end{equation}
+The comparison of (\ref{eq:normality}) and (\ref{eq:nonnormality}) shows that the value of the objective function can be much smaller if the structure does not need to be maintained.
+
+The paper is organized as follows. We first recall the concept of Lyapunov stability both in continuous and discrete-time and introduce some notations that we use extensively throughout this article.  In Section \ref{sec:dik}, we detail how we build ellipsoidal approximations of nonconvex stable sets and how this can be used to transform our optimization problem into a convex optimization problem. In Section \ref{sec:barp}, we give an explicit solution of the projection of $A$ onto the ellipsoid in the case of companion matrices and give the algorithm. General matrices are addressed in Section \ref{sec:barm}. We then describe the procedure to find a starting point for the algorithm in Section \ref{sec:sta}. Section \ref{sec:num} contains numerical examples that illustrate the capabilities of the algorithm and we give some concluding remarks in Section \ref{sec:con}.
+
+\section{Definitions and notations}\label{sec:not}
+Throughout this paper, matrices are square complex matrices of size $n$ and are denoted by capital letters. The symbol $I$ denotes the identity matrix and its dimensions should be clear from the context. For a matrix $X$ the associated monic polynomial, also called the characteristic polynomial, is denoted by $x(\lambda) = x_0 + \lambda x_1 + \cdots + \lambda^{n-1} x_{n-1}+ \lambda^n$. The vector of complex coefficients of $x(\lambda)$ is expressed as $x^T = [x_0 \hspace{1ex} \ldots \hspace{1ex} x_{n-1}]$.
+The link
+$$
+x(\lambda) = \det\left(\lambda I - X \right)
+$$
+is well established. In order to easily write our problem for polynomials, we frequently refer to the so-called companion matrices which are matrices that are completely described by their characteristic polynomial. If $X$ is a companion matrix it can be decomposed as a function of its vector of coefficients $x$
+$$
+X(x) = Z - x e_n^T \ ,
+$$
+where $Z$ is the lower shift matrix and $e_n^T= [0 \hspace{1ex} \ldots \hspace{1ex} 0 \hspace{1ex} 1]$.
+
+
+We equip $\mathbb{C}^{n\times n}$ with the Frobenius scalar product defined by
+$$\ve{X}{Y} \stackrel{\text{def}}{=} \operatorname{Re} \operatorname{Tr} (XY^*),$$
+where $Y^*$ denotes the conjugate transpose of $Y$.  Note that this inner product is symmetric, i.e.\  $\ve{X}{Y}=\ve{Y}{X}$ (no conjugation is needed). The induced norm $\|X\|_F = \ve{X}{X}^{1/2}$ is the Frobenius norm. The Frobenius norm of a companion matrix is equal to the $2$-norm applied on the vector of coefficients of the characteristic polynomial of this matrix.
+We will frequently use the following identities:
+\begin{equation}
+\ve{X}{YZ} = \ve{Y^*X}{Z} = \ve{XZ^*}{Y} \ .
+\label{eq:propfrob}
+\end{equation}
+If $\mathcal{A}:\mathbb{C}^{n\times n}\to \mathbb{C}^{n\times n}$ is a linear operator, then
+by $\mathcal{A}^*$ we denote its adjoint defined by
+\begin{equation}\label{eq:adjoint-def}\ve{X}{\mathcal{A} (Y)} = \ve{\mathcal{A}^* (X)}{Y}, \qquad X,Y\in \mathbb{C}^{n\times n} .
+\end{equation} 
+The symbol $\otimes$ will denote the Kronecker product of two matrices. For a matrix $Y$, the operator $\operatorname{vec}(Y)$ returns a vector obtained by piling up the columns of $Y$, i.e, if $Y = [y_1^T \ \ \ldots \ \ y_n^T]$, then
+$$
+\operatorname{vec}(Y) = [ y_1\hspace{1ex} \dots \hspace{1ex} y_n ]^T \ .
+$$
+The following identity for square matrices is well known
+$$
+\operatorname{vec}(XYZ) = (Z^T\otimes X) \operatorname{vec}(Y)\ .
+$$
+
+\vspace{-3em}
+\paragraph*{Lyapunov Stability}
+A Hermitian matrix $X\in \mathbb{C}^{n\times n}$ is called positive definite, denoted $X\succ 0$, if $v^*X v > 0$ for all $v\in \mathbb{C}^{n}\backslash\{0\}$, is called positive semidefinite, denoted $X\succeq 0$, if $v^*Xv\geq 0$ for all $v\in \mathbb{C}^{n}$ and is called negative definite if $-X\succ 0$. When applied to a dynamical system $\dot{x} = A x$, these considerations lead to the concept of Lyapunov equation in continuous-time and to the Stein equation in discrete time. 
+A matrix $A\in \mathbb{C}^{n\times n}$ representing a continuous (resp. discrete) dynamical system is called \emph{stable} if all its eigenvalues lie in the open left half-plane (resp. in the open unit disk). We will use the notation $\mathbb{S}^{n\times n}$ to denote the set of all complex stable matrices of size $n$. 
+\begin{thm}[Lyapunov]
+\label{thm:Lyapunov}
+A matrix $X\in \mathbb{C}^{n\times n}$ is continuously (resp. discretely) stable if and only if there exists $P = P^*\succ 0$ such that the continuous-time map
+\begin{equation}\label{eq:A_P}\mathcal{A}_P(X) \stackrel{\text{def}}{=} \Psi_X(P) =  X P + PX^* ,\end{equation}
+or, respectively, the discrete-time map 
+\begin{equation}\label{eq:dA_P}\mathcal{A}_P(X) \stackrel{\text{def}}{=} \Psi_X(P) =  X P X^* - P\end{equation}
+is negative definite.
+Moreover, if $X$ is stable and $\Psi_X(P)\prec 0$, then $P\succ 0$.
+\end{thm}
+Some clarifications are needed at this point. First, note that this theorem makes use of the definition of negative definite Hermitian matrices, which implies that $\mathcal{A}_P(X)$ has to be Hermitian. This is always guaranteed by the fact that $P$ is Hermitian, and the whole expression makes sense. Secondly, the Lyapunov (\ref{eq:A_P}) and Stein (\ref{eq:dA_P}) operators are linear in $P$ but the Stein operator is quadratic in $X$. Nonetheless, in order to ease the notational burden, we will denote both operators by $\mathcal{A}_P(X)$ when considering $X$ as the variable and will only distinguish the two when necessary.
+
+\vspace{-1em}
+\paragraph*{Self-concordant functions}
+Let us first define the directional derivative of a function $f(X)\;:\; \mathbb{C}^{n\times n} \rightarrow \mathbb{C}$. The directional derivative in a given direction $H$ can be obtained by applying the following definition
+$$
+Df(X)[H] = \lim_{t \rightarrow 0^+} \frac{f(X+tH)-f(X)}{t} \ ,
+$$
+or it can be obtained by computing the derivative of the function $\phi(X;t) = f(X+tH)$ with respect to the time $t$, 
+$$
+Df(X)[H] = \phi_t'(X;0)\ .
+$$
+We thus have 
+$$
+\begin{alignedat}{2}
+&Df(X)[H] & &= \phi_{t\phantom{tt}}'(X;0) = \ve{f'(X)}{H}\\
+&D^2f(X)[H,H]&  &= \phi_{tt\phantom{t}}''(X;0) = \ve{f''(X)H}{H}\\
+&D^3f(X)[H,H,H]& &= \phi_{ttt}'''(X;0) = \ve{f'''(X)[H]H}{H}\ . \\
+\end{alignedat}
+$$
+These definitions are necessary for defining the self-concordant functions.
+\begin{defn}
+A closed convex function $f(Y)$ of class $C^3$ with open domain is a self-concordant function if the following inequality \cite{Nesterov:2004}
+$$
+|D^3f(Y)[H,H,H]| \leq M_f D^2f(Y)[H,H]
+$$ 
+holds for any $Y \in \operatorname{dom}\ f$ and some constant $M_f \geq 0$.
+\end{defn}
+Self-concordant functions have interesting properties, notably of being affine-invariant and of being a barrier function on the closure of their domain.
+\begin{thm}[Affine-invariant property \cite{Nesterov:2004}]
+Let $\mathcal{A}(X)$ be a linear operator, $\mathcal{A}(X) \;:\; \mathbb{C}^{n\times n} \rightarrow \mathbb{C}^{n\times n}$. Assume that a function $f(Y)$ is self-concordant with the constant $M_f$. Then the function $\phi(X) = f(\mathcal{A}(X))$ is also self-concordant and $M_{\phi} = M_f$.
+\end{thm}
+\begin{thm}[Barrier function \cite{Nesterov:2004}]
+Let $f$ be a self-concordant function. Then for any point $\bar{x}$ belonging to the boundary of $\operatorname{dom} f$ and any sequence
+$$
+\{x_k\} \subset \operatorname{dom} f\;:\; x_k\rightarrow \bar{x}
+$$
+we have $f(x_k) \rightarrow +\infty$.
+\end{thm}
+Self-concordant functions and self-concordant barriers are used extensively in the optimization literature where they play a significant role. Some very well-known functions are self-concordant functions. In this paper, we exclusively use the \emph{log-det} function given by $f(Y) = -\ln\det(Y)$.
+
+
+\section{Dikin Ellipsoid for the stability region} \label{sec:dik}
+
+Taking into account our definition of stability, we can reformulate (\ref{eq:duproblemedebase}) as finding $X$ and $P$ such that
+\begin{equation}
+\begin{aligned}
+\inf_{X,P}\ \ & \frac{1}{2}\|X-A \|_F^2 \\
+\text{s.t } \ & \mathcal{A}_P(X) \prec 0 \\
+& P = P^* \succ 0
+\end{aligned}
+\label{eq:minXP}
+\end{equation}
+The constraints of (\ref{eq:minXP}) define a highly nonconvex domain. A first step toward the resolution of the equation is achieved by a convexification of the domain of the problem. Several types of approximation are available, a good example is provided by LMI approximations. LMI's are able to fit well the stability boundary \cite{Henrion:2010} but they do not admit an iterative refinement (this is a one shot procedure). The solution that we present here has the  advantages of being convex, easy to describe, and approaching quite well the stability boundary.
+
+Our approach is the following : for a given $P$ that satisfies the constraints of (\ref{eq:minXP}), there are many possible candidates $X$. As a consequence, for any given $P\succ 0$ we can define
+\begin{equation}\label{eq:St_P}\mathbb{S}_{P} \stackrel{\text{def}}{=} \{X\in \mathbb{C}^{n\times n} \;:\; -\mathcal{A}_P(X) \succ 0\} \subset \mathbb{S}^{n\times n},\end{equation}
+and we have
+\[\bigcup_{P\succ 0} \mathbb{S}_{P} = \mathbb{S}^{n\times n}. \]
+The reader is referred to \textsc{F}igure~\ref{fig:stables} for understanding the inclusion relations between the various sets of stable matrices we define here.
+\begin{figure}[t]
+\center
+\includegraphics[height=5cm]{dessin_ensembles_8cm_mod.pdf}
+\caption{Sketch of the space of stable matrices $\mathbb{S}^{n\times n}$, the set of stable matrices for a given $P$ : $\mathbb{S}_{P}$, and its convex subset the Dikin ellipsoid $\mathcal{E}_P$ of center $X$.}
+\label{fig:stables}
+\hrulefill
+\end{figure}
+
+If $P\succ 0$ then the set $\mathbb{S}_{P}$ has nonempty interior, and the function $b_P(X) \;:\; \mathbb{C}^{n\times n} \rightarrow \mathbb{C} \;:\;$
+\begin{equation}\label{eq:barrier}b_P(X) \stackrel{\text{def}}{=} f(-\mathcal{A}_P(X)), \qquad f(Y) = -\ln \det Y,\end{equation}
+is a self-concordant barrier for $\mathbb{S}_{P}$. An essential result of the theory of interior point methods for optimization  states, loosely speaking, that the open unit ellipsoid centered at a point in the domain of a self-concordant function, with shape defined by the Hessian of the barrier evaluated at that point, belongs to its domain.
+Applying this to $b_P$, we obtain the following result :
+\begin{thm}[Dikin Ellipsoid]
+\label{thm:Ellipsoid} 
+Let $X\in \mathbb{S}^{n\times n}$ and $P\succ 0$ be given and be such that $\mathcal{A}_P(X)\prec 0$. For any $0 \leq \alpha< 1$, the ellipsoid
+\begin{equation}
+\label{eq:ellipsoid}
+\mathcal{E}(P,X;\alpha) \stackrel{\text{def}}{=} X + \{H\in \mathbb{C}^{n\times n} \;:\; \ve{b_P''(X)H}{H}\leq \alpha\}
+\end{equation}
+belongs to $\mathbb{S}_{P}$. 
+\end{thm}
+\vspace{-1em}
+\begin{pf} First note that the assumption on $X$ is equivalent to stating that $X$ lies in the domain of $b_P$. The inclusion
+follows from Theorem 4.1.5 in \cite{Nesterov:2004}. See also \cite{Gahinet:1994}.
+\end{pf}
+\vspace{-1em}
+It is actually possible to consider other self-concordant barrier functions than the \emph{log-det} barrier.  But the \emph{log-det} has the best barrier parameter \cite{Nesterov:2004}.
+
+The Dikin ellipsoid is quite a powerful tool in order to deal with our nonconvex domain. Still, the choice of suitable $P$ and $X$ is critical for obtaining a convex domain which is as close as possible to the original nonconvex set. We address the question of finding an initial $X$ in Section \ref{sec:sta}, and we will concentrate for now on an appropriate choice of $P$.
+
+\vspace{-1em}
+\paragraph*{Optimizing the ellipsoid}
+If $X$ is a stable matrix, then by Theorem \ref{thm:Lyapunov} there must exist $P\succ 0$ such that $\Psi_X(P)\prec 0$. We now describe a
+procedure for computing such a $P$. Note that Theorem \ref{thm:Lyapunov} also states that whenever $\Psi_X(P)\prec 0$ for a stable matrix $X$, then necessarily $P$ is positive definite. Since the set of positive definite matrices $P$ satisfying the condition $\Psi_X(P)\prec 0$ is a cone, we can limit our search to the bounded convex set
+$$
+\mathbb{P}_{X} \stackrel{\text{def}}{=} \{P\in \mathbb{C}^{n\times n} \;:\; \Psi_X(P)\prec 0, P \succ 0, \quad  \ve{P}{I}=1\}.
+$$
+Any matrix $P$ belonging to $\mathbb{P}_{X}$ satisfies our requirements. But for each $P$ the Dikin ellipsoid associated to that choice is different both in volume and in orientation. Indeed, the set $\mathbb{S}_{P}(X)$ changes for each choice of $P$ and so does the Dikin ellipsoid as pictured in \textsc{F}igure~\ref{fig:shapeSp}.  We will, however, choose $P$ as a \emph{central} point of this set. The motivation behind this choice is the following. \newline
+By taking a $P$ which lies on the boundary of $\mathbb{P}_{X}$, $\mathcal{A}_P(X)$ will be singular and hence $X$ will be said to be marginally stable for this choice of $P$. Conversely, if you take $P$ as a central point of the set of all possible $P$'s, then your hopes are that $X$ will somehow be a central point of the set $\mathbb{S}_{P}$. Hence, the volume of the implied Dikin ellipsoid will always be large but there is no proof that this is the best choice. As detailed later on Section~\ref{sec:num}, numerical experiments show that this choice produce far better solution than "randomly" generated $P$.  Let us detail our computation for $P$.
+\begin{figure}[t]
+\center
+\includegraphics[height=5cm]{dessin_shape_8cm.pdf}
+\caption{Sketch of two possible choices of $P$ and their implication on the volume of both $\mathbb{S}_{P}$ (in black) and the Dikin Ellipsoid (in grey). The shape of the Dikin ellipsoid is only illustrative, there is no guarantee that its volume would be maximal inside $\mathbb{S}_{P}$.}
+\label{fig:shapeSp}
+\hrulefill
+\end{figure}
+
+We equip $\mathbb{P}_{X}$ with the self-concordant barrier
+$$
+b_X(P) \stackrel{\text{def}}{=} f(-\Psi_X(P)), \qquad f(Y) = -\ln \det Y,
+$$
+and choose $P=P_*$ to be the \emph{analytic center} of the set $\mathbb{P}_{X}$:
+\begin{equation}
+\label{eq:analytic_center}
+P_* \stackrel{\text{def}}{=} \arg \min \{b_X(P) \;:\; P\in \mathbb{P}_{X}\}.
+\end{equation}
+\begin{thm} \label{thm:findPQ}If $X\in \mathbb{S}^{n\times n}$, then the solution of (\ref{eq:analytic_center}) is unique, and is given in the continuous-time case by the Lyapunov equations
+\begin{align}\label{eq:ChoosingP:Lyapunov1}X^*Q^{-1}+Q^{-1}X + n I &= 0,\\
+\label{eq:ChoosingP:Lyapunov2}XP + PX^* + Q &= 0,
+\end{align}
+and in the discrete-time case by the Stein equations
+\begin{align}\label{eq:DChoosingP:Lyapunov1}X^* Q^{-1}X-Q^{-1} + n I &= 0,\\
+\label{eq:DChoosingP:Lyapunov2}X P X^* - P + Q &= 0.
+\end{align}
+\end{thm}
+\vspace{-1em}
+\begin{pf} Since $b_X$ is a self-concordant barrier function and $\mathbb{P}_{X}$ is bounded, $P_*$ must exist and is unique. This solution $P_*$ must satisfy the first order necessary optimality conditions 
+\begin{align}
+b_{X}'(P) + \mu I &= 0, \label{eq:ChoosingP:first_order_cond_a}\\
+\ve{P}{I}&=1, \label{eq:ChoosingP:first_order_cond_b}\\
+\mu &\in \mathbb{R}, \notag
+\end{align}
+which are obtained by computing the derivative of the Lagrangian of (\ref{eq:analytic_center}) with respect to $P$ (\ref{eq:ChoosingP:first_order_cond_a}) and $\mu$ (\ref{eq:ChoosingP:first_order_cond_b}) respectively.
+We will first show that 
+\begin{equation}
+\label{eq:mu=n}\mu=n \ .
+\end{equation}
+ Indeed, observe that $b_X$ is logarithmically homogeneous, i.e.
+\begin{align}
+b_X(tP) &= -\ln \det (\Psi_X(tP)) \notag\\
+& = -\ln \det (t\Psi_X(P))\notag\\
+& = -\ln (t^n \det \Psi_X(P))\notag\\
+& = -b_X(P) - n \ln t, \qquad t>0, \label{eq:ChoosingP:detail}
+\end{align}
+and hence
+$$
+\begin{aligned}
+-n \stackrel{(\ref{eq:ChoosingP:detail})}{=}\tfrac{d}{dt}b_X(tP)|_{t=1} &\stackrel{\text{def}}{=} \ve{b_X'(tP)}{P}|_{t=1}\\ &\stackrel{(\ref{eq:ChoosingP:first_order_cond_a})}{=} -\mu\ve{I}{P}\\ &\stackrel{(\ref{eq:ChoosingP:first_order_cond_b})}{=} -\mu.
+\end{aligned}
+$$
+Note that the second equality on the first line is a simple application of the chain rule on $b_X(tP)$, see Appendix~\ref{app:chainrule}.
+Then, we can verify by inspection using (\ref{eq:adjoint-def}) that the adjoint of $\Psi_X$ is given by, in the continuous and discrete-time case respectively, 
+\begin{align}
+\Psi_X^*(Y) &= X^*Y + YX, \label{eq:Psi_X_adjoint}\\
+\Psi_X^*(Y) &= X^* Y X - Y\ ,\label{eq:DPsi_X_adjoint}
+\end{align}
+see Appendix~\ref{app:adjoint} for details on the adjoint of an operator. If we now define
+\begin{equation}
+Q \stackrel{\text{def}}{=} -\Psi_X(P),
+\label{eq:defQ}
+\end{equation}
+which is exactly (\ref{eq:ChoosingP:Lyapunov2}) and (\ref{eq:DChoosingP:Lyapunov2}), we can once more make use of the chain rule to obtain
+\begin{equation}\label{eq:ChoosingP:derivat_of_b_X}
+b_X'(P) = -\Psi_X^*(f'(-\Psi_X(P))) 
+\stackrel{(\ref{eq:defQ})}{=} \Psi_X^*(Q^{-1}).
+\end{equation}
+Finally, by substituting (\ref{eq:mu=n}) and (\ref{eq:ChoosingP:derivat_of_b_X}) into (\ref{eq:ChoosingP:first_order_cond_a}) we prove (\ref{eq:ChoosingP:Lyapunov1}) and (\ref{eq:DChoosingP:Lyapunov1}).
+
+It remains to note that since $X$ is stable, (\ref{eq:ChoosingP:Lyapunov1}) (resp. (\ref{eq:DChoosingP:Lyapunov1}))  has a unique solution in $Q^{-1}$ and, in turn, (\ref{eq:ChoosingP:Lyapunov2}) (resp.(\ref{eq:DChoosingP:Lyapunov2})) a unique solution in $P$.
+\end{pf}
+As a conclusion to this section, we give some insight on how to solve the systems of Theorem \ref{thm:findPQ}. An easy-to-implement way of solving the systems is to find the Cholesky decomposition of $Q^{-1}$ by solving (\ref{eq:ChoosingP:Lyapunov1}) or (\ref{eq:DChoosingP:Lyapunov1}), invert it, construct $Q$ and then find the Cholesky decomposition of $P$ by solving (\ref{eq:ChoosingP:Lyapunov1}) or (\ref{eq:DChoosingP:Lyapunov1}). An implementation of this technique exists, see \cite{Hammarling:1991} and references therein. Though easy to use, this technique does not take advantage of the special structure of the equations implied by the use of companion matrices when our system is a polynomial. 
+
+\section{Barrier projection method for polynomials}\label{sec:barp}
+Based on the previous section, we are now able to derive a convex optimization problem for which we can even give a closed form solution. From now on, we will focus on companion matrices, i.e. on matrices that are completely determined by their characteristic polynomial. The fact that an easy-to-describe closed form solution exists for the polynomial case justifies that its development comes before the general matrix case.
+
+We denote by $\mathcal{A}_P(x)$ the Lyapunov operator $\mathcal{A}_P(X(x))$ and the self-concordant barrier function given by  (\ref{eq:barrier}) is now
+$$
+b_P(x) \stackrel{\text{def}}{=} f(-\mathcal{A}_P(x)), \qquad f(Y) = -\ln \det Y.
+$$
+Our objective is to find a correction vector $h \in \mathbb{C}^{n}$ such that $(x+h)(\lambda)$ is the closest stable polynomial to $a(\lambda)$ within the domain described by the Dikin ellipsoid. Or, if we take the polynomial $x$ as a companion matrix, we are looking for a correction matrix $H(h) = -he_n^T$ such that $X(x)+H(h)$ is the closest stable companion matrix within the Dikin ellipsoid. For clarity, we denote by $X$ and $A$ the companion matrices $X(x)$ and $A(a)$ and by $H$ the matrix $H(h)$. The convex minimization problem is thus
+$$
+\begin{aligned}
+\min_{h} \ & \mbox{${\frac{1}{2}}$} \|x+h-a\|_2^2\\
+& \ve{b_P''(x)h}{h} \leq \alpha\ .
+\end{aligned}
+$$
+or equivalently
+\begin{equation}
+\begin{aligned}
+\min_{h} \ & \mbox{${\frac{1}{2}}$} \|X+H-A\|_F^2\\
+& \ve{b_P''(x)h}{h} \leq \alpha\ .
+\end{aligned}
+\label{eq:pproborig}\end{equation}
+An analytical solution for (\ref{eq:pproborig}) can be found based on the first optimality conditions that are both necessary and sufficient
+\begin{align}
+x + h -a + \lambda \left(b_P''(x)h \right) &= 0\label{eq:poptcond1} \\
+\frac{\lambda}{2}\left(\ve{b_P''(x)h}{h} -\alpha\right)&=0 \label{eq:poptcond2} \\
+\lambda &\geq 0 \notag \ .
+\end{align}
+Note that in view of (\ref{eq:poptcond1}) and the fact that $x+h$ is stable and $a$ is not, $\lambda$ cannot be zero. Hence, the complementary slackness condition (\ref{eq:poptcond2}) imposes that the optimal solution for $h$ will give a point on the boundary of the ellipsoid since
+$$
+\ve{b_P''(x)h}{h} -\alpha = 0 \ .
+$$
+Let us now define the linear operator 
+\begin{equation}
+\mathcal{B} \;:\; \mathbb{C}^{n} \rightarrow \mathbb{C}^{n\times n} \;:\; h \rightarrow b_P''(x)h \ ,
+\label{eq:Bdef}
+\end{equation}
+and consider $B$, the matrix representation of this operator. As $B$ is symmetric and positive definite (it is a sum of positive definite and positive semidefinite matrices), it can be diagonalized using orthogonal transformations $B = U D_{B}U^T$.
+Now assuming that $\lambda$ is known, we find that the solution to (\ref{eq:poptcond1}) must be given by 
+\begin{equation}
+h = \left[I+\lambda B \right]^{-1}(a-x) \ .
+\label{eq:psolgeneric}
+\end{equation}
+As such (\ref{eq:psolgeneric}) is rather abstract. Detailed expressions will be given later on, but we now focus on finding the Lagrange multiplier associated with the problem. 
+
+In order to find $\lambda$ we can set $h$ as a function of $\lambda$ as given in (\ref{eq:psolgeneric}) and introduce it in the constraint of the minimization problem (\ref{eq:pproborig}). After making use of the definition of our scalar product and the fact that $B$ can be diagonalized, we obtain
+\begin{equation}
+\label{eq:ppsi}
+\psi (\lambda) = \sum_{i} \frac{d_{B,i} (\hat{a}-\hat{x})^2_{i}}{(1+\lambda d_{B,i})^2} - \alpha = 0 \ ,
+\end{equation}
+where $\hat{a} - \hat{x} = U^T(a-x)$.  The rightmost zero of this function can easily be solved using Newton's method. Indeed, since $\mathcal{B}$ is positive definite and therefore $D_B$ has positive elements, the poles of $\psi(\lambda)$ are all negative. Moreover the graph of $\psi(\lambda)$ shows that the function is strictly decreasing on the right of the coordinate axis, it is positive on the coordinate axis and it tends to $-\alpha$ at infinity. This enables us to conclude that there is one and only one positive root for $\psi$. Based on the same argument we deduce that the shape of the function is convex on the right of the coordinate axis and we can thus use the Newton-Raphson iteration
+$$
+\lambda_+ = \lambda - \frac{\psi(\lambda)}{\psi'(\lambda)} \ .
+$$
+We now have everything at hand to describe our algorithm
+\begin{alg}[Barrier Projection Method] \hspace{1em}
+\begin{enumerate}
+\item Choose a stable polynomial $x_0$
+\item For $k \geq 0$ 
+\begin{enumerate}
+\item Find $P$ and $Q$ by solving (\ref{eq:ChoosingP:Lyapunov1})-(\ref{eq:DChoosingP:Lyapunov2})
+\item Solve (\ref{eq:ppsi}) to get $\lambda$
+\item $x_{k+1} = x_k + h$ is the projection of $a$ onto the ellipsoid $\mathcal{E}(P_k,X_k,1)$
+\end{enumerate}
+\end{enumerate}
+\end{alg}
+
+\vspace{-1em}
+\paragraph*{Detailed expressions for polynomials} In this paragraph, we give detailed expressions for all the operators we have been using up to now. We first give an expression for the Hessian of the barrier function which defines the Dikin ellipsoid $\mathcal{E}(P_k,X_k,\alpha)$. We then find the matrix representation for $B$ for polynomials.
+\begin{thm}
+The Hessian of the barrier function is given by
+\begin{align}
+\ve{b_P''(x)h}{h} &= 2\ve{Q^{-1} \left(hp^* + p h^* \right)Q^{-1} p}{h} \ , \label{eq:pdsbarrierc}\\ 
+\intertext{in the continuous-time case and by }
+\ve{b_P''(x)h}{h} &= 2\ve{Q^{-1} \left(Xp h^* + hp^*X^*\right)Q^{-1} X p}{h} \notag \\
+& \phantom{= }+ 2 \ve{Q^{-1} h p_{nn}}{h} \ , \label{eq:pdsbarrierd} 
+\end{align}
+in the discrete-time case, where $ p = Pe_n$ and $p_{nn} = e_n^TPe_n$.
+\end{thm}
+\begin{pf}
+The proof implies only basic calculus. Let us consider the first and second order derivatives of $\mathcal{A}_P(x)$ denoted by $\mathcal{C}_P(h)$ and $\mathcal{D}_P(h)$ respectively. For the discrete-time setting, we have for the first order derivative
+$$
+\begin{aligned}
+\mathcal{C}_P(h) &= D\mathcal{A}_P(x)[h]  \\
+&= -(Z-xe_n^T)Pe_nh^*-he_n^TP(Z^T-e_nx^*) \ ,
+\end{aligned}
+$$
+which can be written as 
+\begin{equation}
+\mathcal{C}_P(H) = XPH^*+HPX^* \label{eq:pdfderiv} \ .
+\end{equation}
+Though the two expressions $\mathcal{C}_P(h)$ and $\mathcal{C}_P(H)$ represent the first order derivative of $\mathcal{A}_P(x)$, they expressions differ. Still each is recognizable by the size of the argument.
+The second order derivative is given by
+$$
+\begin{aligned}
+\mathcal{D}_P(h) &= D^2\mathcal{A}_P(x)[h,h] \\
+&= (he_n^T)Pe_nh^*+he_n^TP(e_nh^*) \ ,
+\end{aligned}
+$$
+or in its matrix form by
+\begin{equation}
+\mathcal{D}_P(H) = 2HPH^* \label{eq:pdsderiv} \ .
+\end{equation}
+For continuous-time systems, we find $\mathcal{C}_P(H) = \mathcal{A}_P(H)$ and $\mathcal{D}_P(H) = 0$. The adjoint of $\mathcal{C}_P(h)$ and $\mathcal{D}_P(h)$ can be found but we will only use their more simple matrix form,  
+$$
+\mathcal{C}_P^*(Y) = 2YXP \quad  \text{ and } \quad \mathcal{D}_P^*(Y) = 2 Y H P
+$$
+in discrete-time, and 
+$$
+\mathcal{C}_P^*(Y) = 2YP 
+$$
+in continuous-time.
+See Appendix~\ref{app:adjoint} for details on how to compute the adjoint of an operator.
+Since $f'(Y) = -Y^{-1}$, it can be shown that $f''(Y)H = Y^{-1}HY^{-1}$, which together with the chain rule (see Appendix~\ref{app:chainrule}), gives
+\begin{align}
+\ve{b_P'(X)}{H} &\stackrel{(\ref{eq:defQ})}{=} \ve{f'(Q)}{-\mathcal{C}_P(H)} \notag \\
+& \stackrel{\phantom{(\ref{eq:defQ})}}{=} \ve{Q^{-1}}{\mathcal{C}_P(H)} \notag \\
+\ve{b_P''(X)H}{H} & \stackrel{\phantom{(\ref{eq:defQ})}}{=} \ve{f''(Q) \mathcal{C}_P(H)}{\mathcal{C}_P(H)}-\ve{f'(Q)}{\mathcal{D}_P(H)} \notag \\
+&\stackrel{\phantom{(\ref{eq:defQ})}}{=} \ve{Q^{-1} \mathcal{C}_P(H) Q^{-1}}{\mathcal{C}_P(H)}\notag \\
+&\hspace{2em}+ \ve{Q^{-1}}{\mathcal{D}_P(H)} \notag \\
+& \stackrel{\phantom{(\ref{eq:defQ})}}{=} \ve{\mathcal{C}_P^*(Q^{-1} \mathcal{C}_P(H) Q^{-1})}{H} \notag \\ 
+&\hspace{2em}+ \ve{\mathcal{D}_P^*(Q^{-1})}{H} \ , \\
+\intertext{or, which is equivalent,}
+\ve{b_P''(x)h}{h} & \stackrel{\phantom{(\ref{eq:defQ})}}{=} \ve{\mathcal{C}_P^*(Q^{-1} \mathcal{C}_P(-he_n^T) Q^{-1})}{-he_n^T} \notag \\ 
+&\hspace{2em}+ \ve{\mathcal{D}_P^*(Q^{-1})}{-he_n^T} \ , \label{eq:pdsbarrier}
+\end{align}
+At this point, all that remains to be done is to introduce (\ref{eq:pdfderiv}) and (\ref{eq:pdsderiv}) in the Hessian of the barrier (\ref{eq:pdsbarrier}) and obtain, for the discrete-time
+\begin{align*}
+\ve{b_P''(x)h}{h} &= 2\ve{Q^{-1} (XPH^* + HPX^*) Q^{-1} XP)}{-he_n^T} \\
+&\hspace{2em} + 2\ve{{Q^{-1} H P}}{-he_n^T} \ .
+\end{align*}
+With the same reasoning, we get in continuous-time %case
+\begin{align*}
+\ve{b_P''(x)h}{h} & =  2\ve{Q^{-1} \left(HP+PH^* \right)Q^{-1} P}{-he_n^T} \ .
+\end{align*}
+Those expressions correspond exactly to (\ref{eq:pdsbarrierd}) and (\ref{eq:pdsbarrierc}).
+\end{pf}
+
+\vspace{-1em}
+Now that we have found an expression for the Hessian of the barrier function, we can develop an expression for $\mathcal{B}$ as given in (\ref{eq:Bdef}). Again, its expression depends on the type of problem that we are facing and we will distinguish the two. But in both cases, we show that it is possible to find a matrix $B$ real symmetric representing the operator $\mathcal{B}$ such that 
+\begin{equation}
+\begin{bmatrix}
+h_{re}\\
+h_{im}
+\end{bmatrix}
+=
+\begin{bmatrix}I + \lambda B\end{bmatrix}^{-1}
+\begin{bmatrix}
+(a-x)_{re}\\
+(a-x)_{im}
+\end{bmatrix}
+\label{eq:psolhcmplx}
+\end{equation}
+with $B$ having the structure
+\begin{equation}
+B = 2
+\begin{bmatrix}
+T_{1,re}+T_{2,re} & - T_{1,im} + T_{2,im}\\
+T_{1,im} + T_{2,im} & T_{1,re}-T_{2,re}
+\end{bmatrix}\ ,
+\label{eq:structB}
+\end{equation}
+and where the subscripts $re$ and $im$ stand for the real and the imaginary part of the matrices.
+The generic solution found for $h$ (\ref{eq:psolgeneric}), can be expressed as 
+$$
+a-x = [I+\lambda \mathcal{B}]h \ . 
+$$
+Using (\ref{eq:pdsbarrierc}) in the continuous-time case we get
+\begin{align*}
+a-x&= h + 2\lambda  \left[p^*Q^{-1} pQ^{-1} h + Q^{-1} p h^* Q^{-1} p \right]\\
+&= h + 2\lambda \big[ \underbrace{p^*Q^{-1} pQ^{-1}}_{T_1} h +\underbrace{Q^{-1} p (Q^{-1} p)^T}_{T_2} \bar{h} \big]  \ .
+\end{align*}
+Similarly in the discrete-time case, we find using (\ref{eq:pdsbarrierd})
+\begin{align*}
+a-x &= h + 2 \lambda [  \underbrace{\left(Q^{-1} (p^* X^*Q^{-1} X p)+Q^{-1} p_{nn}\right)}_{T_1} h \\
+& \phantom{= h + 2 \lambda [}+ \underbrace{Q^{-1} Xp (Q^{-1} X p)^T}_{T_2} \bar{h}]\ .
+\end{align*}
+By taking the real and imaginary parts of $T_1$ and $T_2$, we find $B$ using (\ref{eq:structB}). By inspection, we remark that $T_1$ is Hermitian and $T_2$ is complex symmetric which enables us to conclude that $B$ is real and symmetric as well. Hence, it is diagonalizable using orthogonal transformations as was sought in order to solve (\ref{eq:ppsi}).
+
+\section{Barrier projection method for general matrices}\label{sec:barm}
+When working with matrices with no specific structure, the simplifications that were made for polynomials are not applicable anymore. As we will see, this leads to an expected increase in complexity. Nonetheless, most of the work can be reused here. The convex problem (\ref{eq:pproborig}) now becomes
+\begin{equation}
+\begin{aligned}
+\min_{H} \ & \mbox{${\frac{1}{2}}$} \|X+H-A\|_F^2\\
+& \ve{b_P''(X)H}{H} \leq \alpha\ .
+\end{aligned}
+\label{eq:mproborig}
+\end{equation}
+And the first optimality conditions write
+\begin{align}
+X + H -A + \lambda \left(b_P''(X)H \right) &= 0\label{eq:moptcond1} \\
+\frac{\lambda}{2}\left(\ve{b_P''(X)H}{H} -\alpha\right)&=0 \label{eq:moptcond2} \\
+\lambda &\geq 0 \notag \ .
+\end{align}
+As in the polynomial case, $\lambda$ cannot be zero and the solution to (\ref{eq:mproborig}) is found on the boundary of the ellipsoid
+$$
+\ve{b''_P(X)H}{H} = \alpha \ .
+$$
+We define the linear operator
+\begin{equation}
+\mathcal{B} \;:\; \mathbb{C}^{n\times n} \rightarrow \mathbb{C}^{n \times n \times n \times n} \;:\; H \rightarrow b_P''(X)H \ .
+\label{eq:Bdefmat}
+\end{equation}
+If a matrix representation $B$ of $\mathcal{B}$ exists, then it is possible to develop a linear system analogous to (\ref{eq:psolgeneric}). The Lagrange multiplier can also be determined by applying a Newton-Raphson scheme on an equation similar to (\ref{eq:ppsi}).   The difficulty of the matrix case comes from the expression of the Hessian of the barrier function. Let us develop detailed expressions for the matrix case.
+
+\vspace{-1em}
+\paragraph*{Detailed expressions for matrices} 
+\begin{thm}
+The Hessian of the barrier function is given by 
+\begin{align}
+\ve{b_P''(X)H}{H} &= 2\ve{Q^{-1} \left(HP + PH^* \right)Q^{-1} P}{H} \label{eq:mdsbarrierc}\\ 
+\intertext{in the continuous-time case and by }
+\ve{b_P''(X)H}{H} &= 2\ve{Q^{-1} \left(HPX^* + XPH^* \right)Q^{-1} X P}{H} \notag \\
+& \phantom{= }+ 2 \ve{Q^{-1} H P}{H} \ , \label{eq:mdsbarrierd} 
+\end{align}in the discrete-time case.
+\end{thm}
+\begin{pf} 
+The proof is similar to the polynomial case, the first and second order derivatives of $\mathcal{A}_P(X)$ are given by (\ref{eq:pdfderiv}) and (\ref{eq:pdsderiv}) respectively. The hessian of the barrier function is then given by (\ref{eq:pdsbarrier}).
+\end{pf}
+Now that we have obtained the expressions for the Hessian of the barrier function, we can write (\ref{eq:moptcond1}) explicitly. We have for (\ref{eq:moptcond1}) in the continuous-time case
+\begin{equation}
+X + H -A + 2\lambda \left(Q^{-1} \left(HP + PH^* \right)Q^{-1} P\right) = 0 \ .
+\label{eq:moptcondex}
+\end{equation}
+An efficient way of solving (\ref{eq:moptcondex}) could not be found. Still, we have a self-adjoint linear operator in $H$ and it can be solved using Kronecker products. Then, (\ref{eq:moptcondex}) is vectorized and the whole equation can be treated as in the polynomial case, 
+$$
+\operatorname{vec}(H) = [I+\lambda B]^{-1} \operatorname{vec}(A-X) \ .
+$$
+Hence, $\lambda$ is obtained by solving an equation similar to (\ref{eq:ppsi}). The use of Kronecker products is not efficient and results in an increased complexity of $\mathcal{O}(n^5)$ using a Conjugate Gradient scheme. As a consequence this technique is only applicable to small systems.
+
+\section{Finding a starting point}\label{sec:sta}
+The last question that needs to be addressed is how to find a starting point for our Barrier Projection Method. As our method focuses on local solutions, the quality of the starting point plays a vital role. You can divide the techniques for a starting point in two groups. In the first group, you have methods that construct a starting point by computing explicitly the poles of the system and then moving them so that the whole system becomes stable. The second group contains methods that stabilize the system without computing explicitly the poles of the system. The methods from this second group are, generally speaking, faster than those of the first group but they suffer from other drawbacks and are not always recommended or even applicable.
+
+A first way of moving the unstable poles of the transfer function is to reflect them inside the stability region with respect to the stability boundary, this is what we will call the \emph{mirrored method}. The stable poles are unchanged and the poles that are on the stability boundary are shifted inside the region to enforce stability.
+
+In the second group, you have to differentiate the polynomial case from the matrix case. For polynomials, we underline two techniques, namely the incomplete factorization of a polynomial \cite{Henri:1979,Gemignani:2000}, and the stabilization by modifying the so-called \emph{reflection coefficients} \cite{MarkelGray:1976}. The last one used to be a popular technique in the speech recognition area \cite{MarkelGray:1976}.
+Unfortunately, those methods were essentially developed for the discrete-time case and continuous-time methods are rare \cite{Gemignani:2000}.  A M\"obius transform can be used to apply discrete-time method to continuous-time problem but this transform is numerically unstable. Both methods have cases that they cannot process. In the case of matrices, the literature is scarce. Still a simple algebraic way of computing a starting point exists. By keeping the skew-Hermitian part of the matrix and shifting it to the left, you obtain a starting point for a continuous-time matrix. In the discrete-time case, an appropriate scaling of the matrix will do.
+
+\section{Numerical examples}\label{sec:num}
+We take three examples that illustrate the various cases that we have solved theoretically : matrix or polynomial, continuous- or discrete-time.
+A good way of testing our algorithm is to search for examples for which we have some bounds for the global optimal solution. 
+Our two first examples are thus based on a problem of this kind. Consider a continuous-time dynamic system whose state matrix is given by
+\begin{equation}
+A = Z + \delta e_1 e_n^T \ .
+\label{eq:experm}
+\end{equation}
+As this matrix can be seen as a companion matrix and as a general matrix, we can apply either the Barrier Projection Method for polynomials or for matrices. The system (\ref{eq:experm}) is unstable since its eigenvalues are spread evenly on a circle centered at the origin and of radius $\delta^{\frac{1}{n}}$.  To our knowledge the best local solution in the sense of the Frobenius norm is reached when $\delta$ is set to $0$ and thus
+$X_*  = Z $. One could think that the distance between the optimal solution $X_*$ and $A$ cannot be smaller than $\delta$. But this is untrue in general. Indeed, recall that the existence of the bound (\ref{eq:boundnonnorm}) shows that a smaller distance between $A$ and $X$ than the one between their eigenvalues is possible.
+Nonetheless $X_*$ is the best solution that we know of. However, this solution has its roots on the stability boundary and can thus not be reached by the algorithm who can only find solutions that are strictly stable. Nonetheless, this can give us an idea on the minimal distance achievable.
+
+As the number of implied dimensions is too high we choose to picture the path followed by the poles of the transfer function of the system that we study. The solutions that we get by applying the matrix and polynomial algorithms are shown in \textsc{F}igure~\ref{fig:mat_ecase} and \textsc{F}igure~\ref{fig:poly_ecase} respectively for $\delta = -0.1$. The starting point is found using the \emph{mirrored} method and thus all the poles of the starting point coincides with the two stars in the left half-plane. Identical solutions were not expected from the two algorithms since the matrix case has much more degrees of freedom than the polynomial one. 
+
+\begin{figure*}[t]
+\center
+\begin{minipage}[t]{5.5cm}
+\begin{center}
+\subfloat[]{\includegraphics[height=5cm]{Mat_ecase_17it_fobjpoint359}
+\label{fig:mat_ecase}}\hspace*{-1cm}\\
+\subfloat[]{\includegraphics[height=5cm]{Poly_ecase_66it_fobjpoint237}
+\label{fig:poly_ecase}}
+\caption{Representation of the path followed by each poles of the transfer function at each iteration if the system is \subref{fig:mat_ecase} a matrix, \subref{fig:poly_ecase} a polynomial . The original poles are stars, the poles of each intermediate solution are in gray scale : the light gray dots are the first iterates, the heavy gray dots are the last iterates. The final solution is a white dot circled in black.}
+\label{fig:circulant}
+\end{center}
+\end{minipage}
+\hspace*{0.3cm}
+\begin{minipage}[t]{5.5cm}
+\begin{center}
+\subfloat[]{\includegraphics[height=5cm]{Moses_SPMirrored_50iterates_orig_closeup}
+\label{fig:Moses:bf}}\\
+\subfloat[]{\includegraphics[height=5cm]{Moses_SPMirrored_50iterates_sol_unnoisedrootploted_closeup}
+\label{fig:Moses:af}}
+\caption{Close up of the distribution of the two upper right roots of the 50 polynomials \subref{fig:Moses:bf} before stabilization, \subref{fig:Moses:af} after stabilization. The two corresponding original roots of $p(z)$ are plotted as light gray circles in \subref{fig:Moses:af}.}
+\label{fig:Moses}
+\end{center}
+\end{minipage}
+\hspace*{0.3cm}
+\begin{minipage}[t]{5.5cm}
+\begin{center}
+\subfloat[]{\includegraphics[height=5cm]{Moses_SPMirrored_50iterates_sol_unnoisedrootploted_closeup_Qrandomvariable_tris}
+\label{fig:Qrand:af}}
+\\
+\subfloat[]{\includegraphics[height=5cm]{Moses_SPMirrored_50iterates_SPMirrored_closeup}
+\label{fig:Qrand:bf}}
+\caption{Close up of the distribution of the two upper right roots of the 50 polynomials \subref{fig:Qrand:af} as obtained after stabilization of the unstable polynomials represented in Fig.~\ref{fig:Moses:bf} when $Q$ is chosen randomly in (\ref{eq:ChoosingP:Lyapunov2}). The roots of the 50 starting points as obtained using the mirrored method are represented in \subref{fig:Qrand:bf}.}
+\label{fig:Qrand}
+\end{center}
+\end{minipage}\\
+\vspace*{0.5cm}
+\hrulefill
+\end{figure*}
+
+The nearest stable matrix $X$ to $A$ rounded at the fourth decimal is given by
+$$
+X = \left [\begin{array} {rrrr}
+-0.0410&   -0.2104 &  -0.0638  &  0.0320\\
+    0.9985  & -0.0671 &  -0.0565 &  -0.0097\\
+    0.0332  &  0.9305 &  -0.1721 &  -0.1242\\
+    0.0084  & -0.0191 &   0.9546  & -0.0284
+\end{array}\right] \ .
+$$
+The nearest stable polynomial $y(s)$ to $a(s)$, rounded after the third decimal, is given by
+$$
+y(s) = s^4+0.009s^3+0.215s^2+0.001s+0.003 \ .
+$$
+The value of both objective function is
+$$
+\|A-X\|_F = 3.57\ 10^{-1} \qquad \|a(s)-y(s)\|_2 =  2.37\ 10^{-1} \ .
+$$
+Hence in this case the algorithm for polynomials performs better. 
+
+Our third example is taken from \cite{Moses:1991}. From a stable polynomial $p(z)$ \cite{Moses:1991}
+$$
+p(z) = z^4 - 2.7607z^3+3.8106z^2-2.6535z+0.9238 \ ,
+$$
+which vector of coefficients is thus 
+$$
+p^T = \begin{bmatrix} -2.7607& 3.8106& -2.6535& 0.9238 \end{bmatrix} \ ,
+$$
+we produce unstable polynomials $a(z)$ by perturbing $p$. The perturbation is a Gaussian noise distributed according to the normal law $\mathcal{N}(0,10^{-2})$. 
+Note that the noise is different to the one used in \cite{Moses:1991} where it was taken to be $\mathcal{N}(0,10^{-4})$. Indeed it was too small to generate unstable instances. Given that the two experiments are different, a thorough comparison does not hold.
+We produce $50$ unstable polynomials on which we apply our Barrier Projection Method. We give the distribution of the roots of the unstable polynomials in \textsc{F}igure~\ref{fig:Moses:bf} while the roots of the stabilized approximations are given in \textsc{F}igure~\ref{fig:Moses:af}. Similar graphs can be found in \cite{Moses:1991} with similar distributions.
+
+\paragraph*{Randomly generated certificate}
+
+We pointed out in Section~\ref{sec:dik} that randomly generated $P$'s provide a much less clever choice for our problem. We take the example from \cite{Moses:1991} again. The experiment is carried as before, except that $P$ will not be taken as a central point as explained in Section~\ref{sec:dik}, Theorem~\ref{thm:findPQ} but will be computed as follows. Take $L_q$ as a random matrix and compute $Q = L_qL_q^*$. Clearly, $Q$ is positive definite and it is regenerated at each iteration of each instance. Hence, solving $XPX^*-P = -Q$ gives a $P$ which is positive definite and it can be used to define our ellipsoidal approximation as in Theorem~\ref{thm:Ellipsoid}. Such a procedure is expected to provide really small steps $h$ since the randomly generated $P$ will not be \emph{central} inside $\mathbb{P}_{X}$, and thus the associated Dikin ellipsoid will be very small.
+
+In the solution that we obtained the mean distance is $10$ times what it used to be. The plots of the solution are shown in \textsc{F}igure~\ref{fig:Qrand:af} where it appears clearly that the solutions obtained are of lesser quality on average compared to \textsc{F}igure~\ref{fig:Moses:af}. One will notice that some roots have barely moved from their original positions shown in \textsc{F}igure~\ref{fig:Qrand:bf}. As expected, the steps leading to the solutions have been observed as really small, of the order of $10^{-6}$ on average and hence the number of iterations was really high, up to $50 \ 10^3$ for each instance. 
+
+\section{Conclusion}\label{sec:con}
+This algorithm opens the way toward the resolution of a range of other nonconvex problems where a real need for new solvers exist. In particular, BMI solvers could be a future application for such technique. Existent solvers for BMI's are based on alternative optimization and their efficiency is sometimes quite low. Other problems on which this technique could be applied are problems where additional constraints are added such as finding the nearest passive system.  
+
+
+\appendix
+
+\section{Chain rule}
+\label{app:chainrule}
+Let us consider three nonempty sets $\hat{X}$, $\hat{Y}\in \mathbb{C}^{n\times n}$ and $\hat{Z} \in \mathbb{C}$. We define the composition function
+$$
+F \;:\; \hat{X} \rightarrow \hat{Z} \;:\; F(X) = f(g(X)) \ ,
+$$
+where 
+$$
+\begin{aligned}
+g &\;:\; \hat{X} \rightarrow \hat{Y} \\
+f &\;:\; \hat{Y} \rightarrow \hat{Z} \ 
+\end{aligned} 
+$$
+are differentiable on their domain.
+The chain rule states that
+\begin{equation}
+\begin{aligned}
+DF(X)[H] &= \ve{F'(X)}{H}\\
+ &= \ve{f'(g(X))}{g'(X)H}\ .
+\end{aligned}
+\label{eq:chainrule}
+\end{equation}
+In the above formula, $g'(X)H$ must be read as the application of the operator $g'(X)$ on an element of the original set (the direction $H$). 
+Let us take an easy example, we use the Frobenius scalar product and we take
+$$
+\begin{aligned}
+g(X) &= LX+B \, \\
+f(Y) &= -\ln \det Y \ .
+\end{aligned}
+$$
+From the chain rule, we know that the directional derivative of their composition is given by (\ref{eq:chainrule}). We first compute the directional derivative of each generic function, 
+\begin{alignat}{1}
+Dg(X)[H] = \ve{g'(X)}{H} &= \ve{L}{H} \notag \\
+Df(Y)[H] = \ve{f'(Y)}{H} &= \ve{-Y^{-1}}{H} \ . \notag
+\end{alignat}
+Though their expression is intuitive, the above derivatives have to be found and their justification can be quite cumbersome. The proof for $Df(Y)[H]$ can be found in \cite{Boyd:2004}.
+We then write the expression of $DF(X)[H]$ using the chain rule
+\begin{alignat}{1}
+\ve{F'(X)}{H} &= \ve{f'(g(X))}{g'(X)H} \notag \\
+ &= \ve{-(LX+B)^{-1}}{LH} \ . \label{eq:nearlast}
+\end{alignat}
+A last step is needed in order to obtain the operator $F'(X)$. Indeed, by making use of the property (\ref{eq:propfrob}), we obtain
+$$
+\ve{F'(X)}{H} = \ve{-L^*(LX+B)^{-1}}{H} \ ,
+$$
+where the star denotes the conjugate transpose of the linear operator $L$.
+
+\section{Adjoint of an operator}
+\label{app:adjoint}
+We start by recalling the definition of the adjoint of an operator. Suppose that we have a linear operator $\mathcal{A} \;:\; E \rightarrow F$. The sets $E$ and $F$ are two subspaces of $\mathbb{C}^{n\times n}$ each equipped with its scalar product $\ve{.}{.}_E$ and $\ve{.}{.}_F$ respectively. 
+The adjoint $\mathcal{A}^*$ of $\mathcal{A}$ is a linear operator, going from $F \rightarrow E$, such that for any $x \in E$ and any $y \in F$
+$$
+\ve{\mathcal{A}x}{y}_F = \ve{x}{\mathcal{A}^*y}_E \ .
+$$
+Moreover if $\mathcal{A} = A, \ A \in \mathbb{C}^{n\times n}$, then $\mathcal{A}^*$ is the conjugate transpose of $A$ which is also denoted by the star. Naturally, the expression of the adjoint of an operator is dependent on the scalar product which is used.
+
+Let us now apply the above definition to the discrete-time version of $\Psi_X(.)$, the continuous-time version is yet easier. We have 
+$$
+\begin{aligned}
+\ve{\Psi_X(Z)}{Y} &= \ve{XZX^*-Z}{Y} \\
+&= \ve{XZX^*}{Y} - \ve{Z}{Y} \\
+\end{aligned}
+$$
+By applying the property (\ref{eq:propfrob}) we further get
+$$
+\begin{aligned}
+\phantom{\ve{\Psi_X(Z)}{Y}} &= \ve{Z}{X^*YX} - \ve{Z}{Y} \\
+&= \ve{Z}{X^*YX-Y}\\
+&= \ve{Z}{\Psi_X^*(Y)}\ .
+\end{aligned}
+$$
+\vspace*{-2em}
+\begin{ack}
+This paper presents research results of the Belgian Network DYSCO (Dynamical Systems, Control, and Optimization), funded by the Interuniversity Attraction Poles Programme, initiated by the Belgian State, Science Policy Office. The scientific responsibility rests with its author(s).
+\end{ack}
+
+\bibliographystyle{plain}
+\bibliography{bibliography,../../Mendeley_bibtex/library}
+
+\end{document}

@@ -1,0 +1,20 @@
+function []= Convergit(mat)
+
+if nargin == 0
+   S = load('stock.mat','Bmat');
+   mat = getfield(S,'Bmat');
+end
+
+[q,k] = size(mat);
+n = sqrt(q);
+
+origin = reshape(mat(:,1),n,n);
+for i = 1 : k
+
+    temp = reshape(mat(:,i),n,n);
+    normit(i) = norm(temp-origin,'fro');
+end
+
+err = normit(2:k)-ones(1,k-1)*normit(1);
+
+semilogy(1:k-10,err(10:k-1),'-o')

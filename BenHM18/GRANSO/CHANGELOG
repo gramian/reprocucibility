@@ -1,0 +1,30 @@
+
+Version 1.5.2
+Description: minor bug fix
+Details:
+- fixed opts.halt_log_fn custom halt functionality
+
+Version 1.5.1
+Description: minor bug fix
+Details:
+- fixed the unable to enable regularization bug
+
+Version: 1.5
+Description: new/enhanced functionality added
+Details:
+- added a new limited-memory mode (LBFGS updating) for large-scale usage
+- significant reduction of memory footprint in full-memory mode
+- added adaptive damping of (L)BFGS updates
+- added tutorial demos
+- the failure rate of quadprog is now calculated and returned to the user
+- GRANSO will print a warning message if quadprog appears unreliable
+- can now disable positive definite check on H0
+- new "debug mode" user option
+- improved and/or corrected some printing, documentation, and code comments
+- soln.dnorm has been corrected to be soln.stat_value
+- fixed minor bug when using opts.rel_tol
+- added code.ini providing machine-readable meta data about GRANSO
+
+Version: 1.0
+Description: initial public release
+Details: n/a

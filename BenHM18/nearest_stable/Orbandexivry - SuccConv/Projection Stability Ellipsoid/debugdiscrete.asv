@@ -1,0 +1,10 @@
+X = Bi;
+iT = 
+P = T*Dp*iT;
+iQ = T*inv(Dq)*iT;
+
+XiQ = X*iQ;
+PXiQ = P*XiQ;
+PAP = P+PXiQ*X'*P;
+
+real(trace((PXiQ*H'*PXiQ + PAP*H*iQ)*H'))

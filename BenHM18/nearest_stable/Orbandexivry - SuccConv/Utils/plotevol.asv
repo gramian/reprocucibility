@@ -1,0 +1,383 @@
+function [] = plotevol(mat,e_lon,isdiscrete,roc,savetype,path)
+%
+%
+%Last modified : 24/09/2010
+%
+if nargin == 1
+    e_lon = 0;
+    isdiscrete = 0;
+    roc = 0;
+    savetype = 'none';
+    path = '';
+end
+
+Stable_param;
+
+%savetype written in lower case
+savetype = lower(savetype);
+
+n = size(mat,1);
+ncol= size(mat,2);
+if n == 0
+    warning('Plotevol:emptymatrix','The input matrix is empty, nothing to plot')
+    return
+end
+
+if n == 1
+    %there's not enough results to plot and this causes bugs
+    return
+end
+
+%setting parameters for the initial plots
+switch savetype
+    case 'article'
+        width  = w_artcl;
+        height = h_artcl;
+        cent   = cent_artcl;
+        ms     = ms_artcl;
+        fs     = fs_artcl;
+        lw     = lw_artcl;
+        ext   = ext_artcl;
+    case 'poster'
+        width  = w_poster;
+        height = h_poster;
+        cent   = cent_poster;
+        ms = ms_poster;
+        fs = fs_poster;
+        lw = lw_poster;
+        ext = ext_poster;
+    case 'personnalized'
+        width  = w_perso;
+        height = h_perso;
+        cent   = cent_perso;
+        ms = ms_perso;
+        fs = fs_perso;
+        lw = lw_perso;
+        ext = ext_perso;
+    case 'default'
+        width  = 0;
+        height = 0;
+        cent   = 1;
+        ms = 5;
+        fs = 14;
+        lw = 1.4;
+        ext = 'pdf';
+    case 'none'
+        width  = 0;
+        height = 0;
+        cent   = 0;
+        ms = 5;
+        fs = 14;
+        lw = 1.4;
+        ext = '';
+    otherwise
+        error('Save type does not exist')
+end
+
+if ((strcmp(savetype,'none')~=1) && isempty(path))
+    error('plotevol:path','No path was given')
+end
+
+complex =0;
+if  any(any(imag(mat)))
+    complex = 1;
+end
+
+% if ncol == 6
+%     mat = Reorder_stock_6by6normal_cplxroots(mat);
+% end
+
+%if the number of points is big then prints one line every 10 lines
+if n > 800
+    r = mod(n,10);
+    J = [3:10:n]; %index of the points that are going to be printed
+    if r ~=3
+        J = [J,n];
+    end
+    J = [1 2, J];%line with the original eigenvalues and starting point
+    mat = mat(J,:);
+    n = length(J);
+end
+
+%first part: (opening the graph)
+figure;
+set(gca,'FontSize',fs)
+if strcmp(savetype,'none')~=1
+    set(gca,'color','none')%makes the background of the figure invisible
+end
+if ~isempty(axes_color)
+    
+
+%label
+if complex
+    xlabel('Re(\lambda)','FontSize',fs)
+    ylabel('Im(\lambda)','FontSize',fs)
+else
+    xlabel('i','FontSize',fs)
+    ylabel('Re(\lambda_i)','FontSize',fs)
+end
+hold on;
+box on;
+
+%second part: plot starting point
+
+if complex
+    plot(real(mat(2,:)),imag(mat(2,:)),'bo','markersize',ms,'linewidth',lw,'markeredgecolor',startingpoint_color)
+
+else
+    plot([1:ncol] ,mat(2,:),'bo','markersize',ms,'linewidth',lw)
+end
+
+
+%third part: actualization of the Bi
+
+for j = 3: n
+    if (isempty(iterate_color)||size(iterate_color,1)<n-2 )||size(iterate_color,2)~=3
+        co = 1-(j-2)/(n-2);
+        if co > 0.9%ensuring that all points are visible by setting a minimal level of grey
+            co = 0.9;
+        end
+        co = [co co co];
+    else
+        co = iterate_color(j-2,:);
+    end
+    if complex
+        plot(real(mat(j,:)),imag(mat(j,:)),'o','MarkerSize',ms,'MarkerFaceColor', co,'MarkerEdgeColor', co)
+    else
+        plot([1:ncol],mat(j,:),'o','MarkerSize',ms,'MarkerFaceColor', co,'MarkerEdgeColor', co)
+    end
+end
+
+%fourth part: reploting initial problem and plotting the boundary of
+%stability
+
+if complex
+    %eigenvalues of the initial problem
+    plot(real(mat(1,:)),imag(mat(1,:)),'ro','markersize',ms,'linewidth',lw,'MarkerEdgeColor',originalpoint_color)
+
+    %boundary of the stability domain
+    if ~isdiscrete
+        h1 = line([0 0],get(gca,'ylim'));
+        h2 = line([e_lon e_lon],get(gca,'ylim'));
+    else
+        x = [0:0.5:360];
+        h1 = plot(cosd(x),sind(x));
+        h2 = plot((1+e_lon)*cosd(x),(1+e_lon)*sind(x));
+    end
+    set(h1,'Color',[0 0 0],'Linewidth',lw)
+    set(h2,'Color',[0 0 0],'Linewidth',lw,'Linestyle','--')
+else
+    %eigenvalues of the initial problem
+    plot([1:ncol],mat(1,:),'ro','markersize',ms,'linewidth',lw)
+
+    %boundary of the stability domain
+    if ~isdiscrete
+        h1 = line([0 ncol+1],[0 0]);
+        h2 = line([0 ncol+1],[e_lon e_lon]);
+    else
+        h1 = line([0 0; ncol+1 ncol+1],[1 -1;1 -1]);
+        h2 = line([0 0; ncol+1 ncol+1],[1+e_lon -1-e_lon;1+e_lon -1-e_lon]);
+    end
+    set(h1,'Color',[0 0 0],'Linewidth',lw)
+    set(h2,'Color',[0 0 0],'Linewidth',lw,'Linestyle','--')
+    set(gca,'Xtick',[1:ncol]) %#ok<NBRAK>
+    set(gca,'Xlim',[0 ncol+1])
+end
+
+
+hold off;
+
+if strcmp(savetype,'none') ~= 1
+    set_plot(width,height,cent)
+end
+
+%refresh after resizing
+if complex
+    if ~isdiscrete
+        %in case the ticks has changed replot the line
+        set(h1,'Ydata',get(gca,'Ylim'));
+        set(h2,'Ydata',get(gca,'Ylim'));
+    else
+        axis equal
+    end
+end
+
+
+%printing the file
+if strcmp(savetype,'none') ~= 1
+    switch ext
+        case 'pdf'
+            print(gcf,'-dpdf','-r300',sprintf('%s%s%s%s',path,Sol_filename,savetype,'.pdf'))
+        case 'svg'
+            xlim = get(gca,'Xlim');
+            ylim = get(gca,'Ylim');
+            prop = 20;
+            if complex
+                %add some WIDTH AND HEIGHT so that the points on the
+                %boundary will be printed in the svg
+                interval1 = xlim(2) - xlim(1);
+                addoff1 = interval1/prop;
+                interval2 = ylim(2) - ylim(1);
+                addoff2 = interval2/prop;
+                set(gca,'Xlim',[xlim(1)-addoff1 xlim(2)+addoff1]);
+                set(gca,'Ylim',[ylim(1)-addoff2 ylim(2)+addoff2]);
+
+                %in case the ticks has changed replot the line
+                if ~isdiscrete
+                    set(h1,'Ydata',get(gca,'Ylim'));
+                    set(h2,'Ydata',get(gca,'Ylim'));
+                end
+            else
+                %add some space at the BOTTOM so that the points on the frame will
+                %be printed in the svg
+                interval = ylim(2) - ylim(1);
+                addoff = interval/prop;
+                set(gca,'Ylim',[ylim(1)-addoff ylim(2)]);
+            end
+            plot2svg(sprintf('%s%s%s%s',path,Sol_filename,savetype,'.svg'),gcf)
+        otherwise
+            error('Format file is not supported')
+    end
+end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%ploting the rate of convergence
+%the convergence is determined from the norm of the matrix not from its
+%eigenvalues.
+if roc
+    converg = StableRoc();
+    converg(end) = [];
+    figure;
+    set(gca,'Fontsize',fs)
+    %plotting the convergence for each eigenvalue
+    semilogy(converg,'o','Markersize',ms,'linewidth',lw,'Markeredgecolor',[254 143 25]/255)
+    xlabel('Iterations')
+    hold on;
+    semilogy(converg,'linewidth',lw,'color',[254 143 25]/255)
+    if strcmp(savetype,'none') ~= 1
+        set_plot(width,height,cent)
+
+        switch ext
+            case 'pdf'
+                print(gcf,'-dpdf','-r300',sprintf('%s%s%s%s',path,Conv_filename,savetype,'.pdf'))
+            case 'svg'
+                xlim = get(gca,'Xlim');
+                ylim = get(gca,'Ylim');
+                prop = 20;
+
+                %add some WIDTH AND HEIGHT so that the points on the
+                %boundary will be printed in the svg
+                interval1 = xlim(2) - xlim(1);
+                addoff1 = interval1/prop;
+                interval2 = ylim(2) - ylim(1);
+                addoff2 = interval2/prop;
+                set(gca,'Xlim',[xlim(1)-addoff1 xlim(2)]);
+                set(gca,'Ylim',[ylim(1) ylim(2)+addoff2]);
+
+                %printing in svg format
+                plot2svg(sprintf('%s%s%s%s',path,Conv_filename,savetype,'.svg'),gcf)
+            otherwise
+                error('Format file is not supported')
+        end
+    end
+end
+
+return
+
+% %the following should not be used, it compute the convergence based on
+% each eigenvalue.
+% if roc
+%     for w = 1: ncol
+%         figure;
+%         set(gca,'Fontsize',fs)
+% 
+%         %computing the distance between the current estimate and the ideal solution
+%         if ~isdiscrete
+%             %real part of the eigenvalues of the iterates
+%             vec = real(mat(2:n,w));
+% 
+%             %WATCH OUT the following implies that the each eigenvalue of
+%             %the solution converge either to its original eigenvalue or
+%             %towards the boundary of the stable set. BUT it should be the
+%             %convegence to the best solution IF it gets to it
+%             if real(mat(1,w)) < e_lon
+%                 %value of the original eigenvalue if it is a stable one
+%                 sol = real(mat(1,w))*ones(n-1,1);
+%             else
+%                 %value of the boundary of the stable set otherwise
+%                 sol = e_lon*ones(n-1,1);
+%             end
+%             err = abs(vec-sol);
+%         else
+%             %READ THIS, the discrete case is different from the continuous
+%             %one, I choose to look at the convergence of the solution based
+%             %on the fact that the last solution found is the "best" one.
+% 
+%             %modulus of the eigenvalues of the iterate
+%             vec = abs(mat(2:n-1,w));
+% 
+%             %computing the distance of each eigenvalues of the iterates to
+%             %the solution.
+%             err = abs(vec-abs(mat(n,w)));
+%         end
+% 
+%         %         %saving the convergence of the last eigenvalue
+%         %         if w == ncol
+%         %             display('Saving the convergence of the last eigenvalue')
+%         %             fsave = sprintf('mat_%i.mat',int8(ellips_radius*100));
+%         %             save(fsave,'err')
+%         %         end
+% 
+%         %plotting the convergence for each eigenvalue
+%         semilogy(err,'o','Markersize',5,'linewidth',lw)
+%         xlabel('Iterations')
+%         hold on;
+%         semilogy(err)
+%         % %----------- Uncomment the next if to plot a triangle that describes the
+%         % %----------- linear rate of convergence --------------------------------
+%         %         if w == ncol
+%         %             hold on;
+%         %             x = [40 56];
+%         %             y = [2e-2 2e-3];
+%         %             plot(x,y,'r');
+%         %             plot([56 56],[2e-2 2e-3],'r');
+%         %             plot([40 56],[2e-2 2e-2],'r');
+%         %             h = text(57,7e-3,'10^{-1}');
+%         %             set(h,'color','r')
+%         %             h = text(46,3e-2,'16');
+%         %             set(h,'color','r')
+%         %             hold off;
+%         %         end
+%         %printing the file
+% 
+%         if strcmp(savetype,'none') ~= 1
+%             set_plot(width,height,cent)
+% 
+%             switch ext
+%                 case 'pdf'
+%                     print(gcf,'-dpdf','-r300',sprintf('%s%s%i%s%s%s',path,Conv_filename,w,'_',savetype,'.pdf'))
+%                 case 'svg'
+%                     xlim = get(gca,'Xlim');
+%                     ylim = get(gca,'Ylim');
+%                     prop = 20;
+% 
+%                     %add some WIDTH AND HEIGHT so that the points on the
+%                     %boundary will be printed in the svg
+%                     interval1 = xlim(2) - xlim(1);
+%                     addoff1 = interval1/prop;
+%                     interval2 = ylim(2) - ylim(1);
+%                     addoff2 = interval2/prop;
+%                     set(gca,'Xlim',[xlim(1)-addoff1 xlim(2)]);
+%                     set(gca,'Ylim',[ylim(1) ylim(2)+addoff2]);
+% 
+%                     %printing in svg format
+%                     plot2svg(sprintf('%s%s%i%s%s%s',path,Conv_filename,w,'_',savetype,'.svg'),gcf)
+%                 otherwise
+%                     error('Format file is not supported')
+%             end
+%         end
+%     end
+% end
+

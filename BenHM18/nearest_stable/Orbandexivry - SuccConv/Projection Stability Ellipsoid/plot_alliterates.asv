@@ -1,0 +1,42 @@
+function [time] = plot_alliterates(path,filename)
+
+if nargin == 0
+    path = path =  '../../results/projection_stability_ellipsoid/Polynomials/'
+    filename = 'stock';
+end
+
+S =load(filename);
+Bmat = getfield(S,'Bmat');
+
+[dim,nit] = size(Bmat);
+dim =sqrt(dim);
+
+if nit >50
+    warning('The number of iterates is quite high')
+    if nit <100
+        error('The number of iterates is really too high!!')
+    end
+    pause(5)
+end
+
+%taking the original unstable problem
+A = reshape(Bmat(:,1),dim,dim);
+a = poly(A);
+
+%taking the starting point of the problem
+S = reshape(Bmat(:,2),dim,dim);
+s = poly(S);
+
+%cycling trough the iterates
+for i =  3:nit
+    It = reshape(Bmat(:,i),dim,dim);
+    it = poly(It);
+    
+    PlotStableSet(a,it,s);
+    
+    print(gcf,'-dpdf','-r300',sprintf('%s%s%s%s',path,Sol_filename,savetype,'.pdf'))
+    
+    s = it;
+end
+    
+    

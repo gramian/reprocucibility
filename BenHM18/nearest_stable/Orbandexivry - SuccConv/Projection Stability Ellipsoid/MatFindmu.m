@@ -1,0 +1,97 @@
+function [mu] = MatFindmu(Beta,M,alpha,tol)
+%MatFindmu(Beta,M,alpha,tol) computes the lagrangian multiplier associated
+%to the problem. In order to find it, a 1-D optimization problem
+%must be solved. As it is convex, a newton method is used. 
+%
+%Input : Beta : if lambda represent the eigenvalues of P, Beta(i,j) =
+%               Lambda(j)/(Lambda(i)^2+Lambda(j)^2)
+%        M    : V'((X-A)P+P(X-A)')V
+%        alpha: The radius of the dikin ellipsoid
+%        tol  : A tolerance for the convergence of the method.
+%
+%Output: mu   : The value of lagrange multiplier maximizing the dual
+%               function of the optimization problem (see related document)
+%
+%Created : 17/01/2011
+%Last modified : 17/01/2011
+
+%squaring the values 
+Betas = Beta.^2;
+Ms = M.^2;
+
+%Defining constants that are used to evaluate the objective functions and
+%its derivatives, it is not used straight away
+C1 = Betas.^2;
+C1 = C1.*Ms;
+
+%initializing the bissection method : setting the interval of research
+NbIterMax = 1000;
+iter = 0;
+mu = 0;
+psy = 10;%the value given here aims at passing the while criterion
+psyp = 1;
+wquit = 0; %enables an early exit from the loop
+% Mat_plot_mu()
+while ((abs(-psy/psyp) > tol)&& ~wquit &&(iter < NbIterMax))
+
+    %evaluating the function and its derivative
+    psy = EvalFmu(mu,Betas,C1,alpha);
+    psyp= EvalFpmu(mu,Betas,C1);
+%     if abs(psyp) < eps
+%         if verbose
+%             warning('    The derivative of psy is zero : divergence of the newton method observed') %#ok<WNTAG>
+%         end
+%         if abs(lambda)< eps %this case should only occur if the matrix A is already stable instead of being instable
+%             lambda =0;
+%         end
+%         wquit = 1;
+%     end
+
+    %actualizing the value of mu
+    mu = mu - psy/psyp;
+
+    %exiting if mu gets negative
+%     if mu < 0
+%         mu = lambda_start/10;%we start again the problem with a smaller lambda
+%         lambda_start = lambda;
+%         if lambda_start < eps % if the root of Psy is indeed negative
+%             wquit = 1;
+%         end
+%     end
+
+    %actualizing the number of iteration
+    iter = iter+1;
+    
+end
+   
+%checking that the value of the function is higher at the mu found than at
+%the origin, if not exit with mu=0.
+% Cmax = EvalFmu(0,alpha);
+% fval = EvalFmu(mu,alpha)
+% fvaln = EvalFmu(mu+1e-3*mu,alpha)
+% fvalp = EvalFmu(mu-1e-3*mu,alpha)
+% if Cmax > fval
+%     mu = 0;
+% end
+    
+end
+
+
+function [F] = EvalFmu(mu,Betas,C1,alpha)
+%[F] = EvalFmu(mu) evaluates the image of the function for a given mu
+
+Den= (Betas+2*mu).^2;
+
+F = sum(sum(C1./Den))-alpha;
+
+end
+
+function [Fp] = EvalFpmu(mu,Betas,C1)
+% [Fp] = EvalFpmu(mu) evaluates the derivative of the function for a given
+% mu
+
+Den= (Betas+2*mu).^3;
+
+Fp = -4*sum(sum(C1./Den));
+
+end

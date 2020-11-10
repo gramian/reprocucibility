@@ -1,0 +1,64 @@
+%Stable_param.m defines parameters are accessible to the user in order to
+%tune the software at his convienence. Most regards post-processing but
+%precision can be tuned using this script.
+
+%-------
+%Algo
+%-------
+
+%radius of the ellipsoid
+ellips_radius = 0.95;
+
+%parameter for the quality of the approximation of the projection onto the
+%Dikin Ellipsoid. beta takes values 0.5 <= beta < 1
+bpram = 0.9;
+
+%----------------
+%POST PROCESSING
+%----------------
+
+%noms de fichier à donner
+Sol_filename = 'Solution';
+Conv_filename = 'Convergence_rate';
+
+%'Article' style
+w_artcl = 5; %width [cm]
+h_artcl = 5; % height [cm]
+cent_artcl = 'Centered'; %figure is centered in the output file
+ms_artcl = 5; %Marker size
+fs_artcl = 12; %Font size
+lw_artcl = 1.4; % Line width
+ext_artcl = 'pdf';
+
+%'Poster' style
+w_poster = 12;
+h_poster = 12;
+cent_poster = '';
+ms_poster = 10;
+fs_poster = 20;
+lw_poster = 1.8;
+ext_poster = 'svg';
+
+%'Personnalized' style
+w_perso = 8;
+h_perso = 8;
+cent_perso = 'Centered';
+ms_perso = 5;
+fs_perso = 14;
+lw_perso = 1.4;
+ext_perso = 'svg';
+
+
+bleufonce = [28 66 113]/255;
+degradebleu = [213 229 255; 170 204 255; 128 179 255; ...
+            85 153 255; 42 127 255; 0 102 255;...
+            0 85 212; 0 68 170]/255;
+orangeflash = [254 143 25]/255;
+black = [0 0 0];
+%couleur des graphes !!Valid for the poster and personnalized mode only !!
+% put [] for default colors.
+axes_color = [];%bleufonce;
+iterate_color = degradebleu;
+startingpoint_color = bleufonce;
+originalpoint_color = orangeflash;
+converg_color = orangeflash;

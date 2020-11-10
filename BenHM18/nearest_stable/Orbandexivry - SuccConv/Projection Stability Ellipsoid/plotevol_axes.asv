@@ -1,0 +1,211 @@
+function [] = plotevol_axes(faxe,zxlim,zylim,mat,e_lon,roc,save,path)
+%plotevol_axes is nearly the same as plotevol except that it does not
+%include  the discrete case and it works on a axis object given  by "faxe".
+% Plotevol_axes was used when I was creating a poster and I didn't want to
+% run again and again StableMain + I was dealing with several figures at
+% the same time.
+%Additional input arguments compare ot plotevol.m
+% ALL OF THEM MUST BE SET
+%               faxe : a handle to a axis object
+%               zxlim and zylim : give the boundary of the axis the the
+%               user want
+%
+% Last modified : 05/01/2011 : Cleaning of the file
+
+%% preprocessing
+if nargin == 4
+    e_lon = 0;
+    roc = 0;
+    save = 'none';
+    path = '';
+end
+
+Stable_param;
+
+%save written in lower case
+save = lower(save);
+
+n = size(mat,1);
+ncol= size(mat,2);
+
+%setting parameters for the initial plots
+switch save
+    case 'article'
+        width  = w_artcl;
+        height = h_artcl;
+        cent   = cent_artcl;
+        ms     = ms_artcl;
+        fs     = fs_artcl;
+        lw     = lw_artcl;
+        type   = type_artcl;
+    case 'poster'
+        width  = w_poster;
+        height = h_poster;
+        cent   = cent_poster;
+        ms = ms_poster;
+        fs = fs_poster;
+        lw = lw_poster;
+        type = type_poster;
+    case 'personnalized'
+        width  = w_perso;
+        height = h_perso;
+        cent   = cent_perso;
+        ms = ms_perso;
+        fs = fs_perso;
+        lw = lw_perso;
+        type = type_perso;
+    case 'default'
+        width  = 0;
+        height = 0;
+        cent   = 1;
+        ms = 5;
+        fs = 14;
+        lw = 1.4;
+        type = 'pdf';
+    case 'none'
+        width  = 0;
+        height = 0;
+        cent   = 0;
+        ms = 5;
+        fs = 14;
+        lw = 1.4;
+        type = '';
+    otherwise
+        error('Save type does not exist')
+end
+
+if ((strcmp(save,'none')~=1) && isempty(path))
+    error('no path was given')
+end
+
+complex =0;
+if  any(any(imag(mat)))
+    complex = 1;
+end
+
+%if the number of points is big then prints one out of 10 lines
+if n > 800
+    r = mod(n,10);
+    J = [r:10:n]; %index of the points that are going to be printed
+    J(1) = 1;%line with the original eigenvalues
+    J(2) = 2;%line with the starting points
+    mat = mat(J,:);
+    n = (n-r)/10;
+end
+
+%% processing
+%first part: (editing the given axes)
+set(faxe,'FontSize',fs)
+hold on;
+
+
+%second part: plot starting point
+
+if complex
+    plot(faxe,real(mat(2,:)),imag(mat(2,:)),'bo','markersize',ms,'linewidth',lw)
+
+else
+    plot(faxe,[1:ncol] ,mat(2,:),'bo','markersize',ms,'linewidth',lw)
+    h1 = line([0 ncol+1],[0 0]);
+    h2 = line([0 ncol+1],[e_lon e_lon]);
+    set(h1,'Color',[0 0 0],'Linewidth',lw)
+    set(h2,'Color',[0 0 0],'Linewidth',lw,'Linestyle','--')
+end
+
+
+%third part: actualization of the Bi
+
+for j = 3: n
+    co = 1-(j-2)/(n-2); % color of the points vary with the index they represent
+    if complex
+        plot(faxe,real(mat(j,:)),imag(mat(j,:)),'o','MarkerSize',ms,'MarkerFaceColor', [co co co],'MarkerEdgeColor', [co co co])
+    else
+        plot(faxe,[1:ncol],mat(j,:),'o','MarkerSize',ms,'MarkerFaceColor', [co co co],'MarkerEdgeColor', [co co co])
+    end
+end
+
+%fourth part: reploting initial problem
+
+for j =1 :size(mat,1)
+    if complex
+        plot(faxe,real(mat(1,:)),imag(mat(1,:)),'ro','markersize',ms,'linewidth',lw)
+        h1 = line([0 0],get(gca,'ylim'));
+        set(h1,'Color',[0 0 0],'Linewidth',lw)
+        h2 = line([e_lon e_lon],get(gca,'ylim'));
+        set(h2,'Color',[0 0 0],'Linewidth',lw,'Linestyle','--')
+    else
+        plot(faxe,[1:ncol],mat(1,:),'ro','markersize',ms,'linewidth',lw)
+        set(faxe,'Xtick',[1:ncol]) %#ok<NBRAK>
+        set(faxe,'Xlim',[0 ncol+1])
+    end
+end
+
+hold off;
+
+set(faxe,'Xlim',zxlim,'Ylim',zylim);
+
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 
+% %ploting the rate of convergence
+% if roc
+%     for w = 1: ncol
+%         figure;
+%         set(gca,'Fontsize',fs)
+%         vec = real(mat(2:n,w));
+%         if real(mat(1,w)) < e_lon
+%             sol = real(mat(1,w))*ones(n-1,1);
+%         else
+%             sol = e_lon;
+%         end
+%         err = abs(vec(:)-sol(:));
+%         semilogy(err,'o','Markersize',5,'linewidth',lw)
+%         hold on;
+%         semilogy(err)
+%         % %----------- Uncomment the next if to plot a triangle that describes the
+%         % %----------- linear rate of convergence --------------------------------
+%         %         if w == ncol
+%         %             hold on;
+%         %             x = [40 56];
+%         %             y = [2e-2 2e-3];
+%         %             plot(x,y,'r');
+%         %             plot([56 56],[2e-2 2e-3],'r');
+%         %             plot([40 56],[2e-2 2e-2],'r');
+%         %             h = text(57,7e-3,'10^{-1}');
+%         %             set(h,'color','r')
+%         %             h = text(46,3e-2,'16');
+%         %             set(h,'color','r')
+%         %             hold off;
+%         %         end
+%         %printing the file
+% 
+%         if strcmp(save,'none') ~= 1
+%             set_plot(width,height,cent)
+% 
+%             switch type
+%                 case 'pdf'
+%                     print(gcf,'-dpdf','-r300',sprintf('%s%s%i%s%s%s',path,'Convergence_rate_',w,'_',save,'.pdf'))
+%                 case 'svg'
+%                     xlim = get(gca,'Xlim');
+%                     ylim = get(gca,'Ylim');
+%                     prop = 20;
+% 
+%                     %add some WIDTH AND HEIGHT so that the points on the
+%                     %boundary will be printed in the svg
+%                     interval1 = xlim(2) - xlim(1);
+%                     addoff1 = interval1/prop;
+%                     interval2 = ylim(2) - ylim(1);
+%                     addoff2 = interval2/prop;
+%                     set(gca,'Xlim',[xlim(1)-addoff1 xlim(2)]);
+%                     set(gca,'Ylim',[ylim(1) ylim(2)+addoff2]);
+% 
+%                     %printing in svg format
+%                     plot2svg(sprintf('%s%s%i%s%s%s',path,'Convergence_rate_',w,'_',save,'.svg'),gcf)
+%                 otherwise
+%                     error('Format file is not supported')
+%             end
+%         end
+%     end
+end
+

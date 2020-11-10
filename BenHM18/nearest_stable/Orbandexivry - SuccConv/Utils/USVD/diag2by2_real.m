@@ -1,0 +1,39 @@
+function [D,U,V] = diag2by2_real(A)
+%gives D and unitary U and V such that U'*A*V = D
+%A MUST BE REAL
+
+if any(size(A) ~= [2 2])
+    error('A must be 2 by 2')
+end
+
+if (A(1,1) + A(2,2)) == 0
+    c1 = 0;
+    s1 = 1;
+else
+    r = (A(1,2)-A(2,1))/(A(1,1)+ A(2,2));
+    c1 = 1/sqrt(1+ r^2);
+    s1 = c1*r;
+end
+
+R1 = [c1 s1; -s1 c1];
+B = R1'*A;
+
+if abs(B(1,2)) == 0
+    c2 = 1;
+    s2 = 0;
+else
+    tau = (B(2,2)-conj(B(1,1)))/(2*B(1,2));
+    g = sign(tau);
+    if g == 0
+        g = 1;
+    end
+    t = g/(abs(tau)+sqrt(1+tau^2));
+    c2 = 1/sqrt(1+t^2);
+    s2 = c2*t;
+end
+
+R2 = [c2 s2;-s2 c2];
+
+D = (R2'*B)*R2;
+U = R1*R2;
+V = R2;

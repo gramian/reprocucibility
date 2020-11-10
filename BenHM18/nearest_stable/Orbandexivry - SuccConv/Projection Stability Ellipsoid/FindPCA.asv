@@ -1,0 +1,14 @@
+function [Ai] = FindPCA(Bmat)
+%
+%computing the size of the original matrices
+[q,k] = size(Bmat);
+n =sqrt(q);
+
+
+[U,S,V] = svd(Bmat);
+
+%the matrix returned corresponds to the principal direction linked to the
+%max singular value (the singular values are ordered in decreasing order by
+%the function SVD(X))
+Ai = reshape(U(1,:),n,n);
+

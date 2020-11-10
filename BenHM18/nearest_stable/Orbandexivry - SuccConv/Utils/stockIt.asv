@@ -1,0 +1,20 @@
+function [stock,Bmat] = stockIt(stock,Bmat,mat)
+
+%dimensions
+[nl,nc]= size(mat);
+
+%if vector (polynomial) is in column transpose
+if nc == 1
+    mat = mat.';
+end
+%if polynomial creates a square matrix
+if nl == 1
+    
+
+%computing the eigenvalues of mat
+vp = eig(mat);
+
+%we stock the value in stock
+ stock = [stock; vp.'];
+ Bmat = [Bmat vec(mat)];
+

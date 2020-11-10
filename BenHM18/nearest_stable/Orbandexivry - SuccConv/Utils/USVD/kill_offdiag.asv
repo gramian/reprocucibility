@@ -1,0 +1,15 @@
+function [R] = kill_offdiag(B,option)
+
+switch option
+    case 'u'
+        i
+if B(2,2) == 0
+    c = 0;
+    s = 1;
+else
+    t = -B(1,2)/B(2,2);
+    c = 1/sqrt(1+t^2);
+    s = t*c;
+end
+
+R = [c s; -s c];

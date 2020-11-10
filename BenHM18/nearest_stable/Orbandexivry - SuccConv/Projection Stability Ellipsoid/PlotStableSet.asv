@@ -1,0 +1,294 @@
+function [] = PlotStableSet(A,B,B0,isdiscrete)
+%[coord,amap,bmap] = PlotStableSet(A,B,B0) plots the limits of the stable
+%in a plane determined by the matrices A, B and B0. In the multidimensional
+%space of coefficients, matrices can be seen as points and thus define a
+%plane.
+%
+%The stable region is drawn by evaluating a succession of matrices given as
+%linear combination of (B0-B) and (B-A) (which are normed). The number of
+%evaluation is given by the parameters npta and nptb. The points to be
+%evaluated are comprised in a interval given by [amin,amax] and
+%[bmin,bmax].
+%
+% Input : A : The unstable matrix
+%         B : The solution found by StableMain.m
+%         B0: The initial point for the algorithm
+%
+% Output : coord : a table of size npta by nptb, containing 1's at (i,j)
+%                  wherever the index (amap(i)*D1+bmap(j)*D2) is
+%                  stable. 2's wherever amap(i) = amax or amin, 3's
+%                  wherever bmap(j) = bmax or bmin.
+%          amap  : a vector of X coordinate of dimension npta, equally
+%                  distributed between inside [amin,amax]
+%          bmap  : a vector of Y coordinate of dimension nptb, equally
+%                  distributed between inside [bmin,bmax]
+%
+% History  : 05/01/2011 : Making of the header
+% Modified : 30/03/2011 : Enabling the handling of polynomials
+% Last modified : 30/03/2011
+
+%parameters of the method
+npta = 301; %number of samples used for the axis B0-B
+nptb = 301; %number of samples used for the axis B-A
+
+if nargin == 0;
+    'coucou'
+end
+if nargin < 4
+    isdiscrete = 1;
+end
+[nl,nc] = size(A);
+if any([nl,nc] - size(B)) || any([nl,nc] - size(B0))
+    error('Some inputs have different sizes')
+end
+
+%preprocessing for polynomials
+if nl < nc
+    A = A.';
+    B = B.';
+    B0= B0.';
+    temp = nl;
+    nl = nc;
+    nc = temp;
+end
+
+if nl == nc
+    %does not do anything we deal with a matrix
+    normtype = 'fro';
+    ispoly = 0;
+elseif nc == 1 %We have A,B,B0 as vectors
+    %the first index must be one
+    A = A/A(1);
+    B = B/B(1);
+    B0 = B0/B0(1);
+    normtype = 2; %option so we now we have polynomials
+    ispoly = 1;
+else
+    error('-> Input "a" is not a vector or a square matrix');
+end
+
+if isdiscrete
+    disp('PROCESSING A DISCRETE CASE')
+else
+    disp('PROCESSING A CONTINUOUS CASE')
+end
+
+X = B0-B;
+Y = B-A;
+D1 = X/norm(X,normtype);
+D2 = Y/norm(Y,normtype);
+
+if ispoly
+    theta = acos(real(sum(D2'*D1))); %------------->is this really right?? what if complex?
+else
+    theta = acos(real(trace(D2'*D1)))%angle between D1 and D2
+end
+
+%parameters
+amin = -norm(X,normtype)*1.2;
+amax = norm(X,normtype)*1.2;
+bmin = -norm(Y,normtype)*1.1;
+bmax = norm(Y,normtype)*0.5;
+
+
+%process
+amap = linspace(amin,amax,npta);
+bmap = linspace(bmin,bmax,nptb);
+coord = int8(zeros(npta,nptb));
+border= int8(zeros(npta,nptb));
+objvalD = zeros(npta,nptb);
+% coord = [];
+
+for i = 1 : npta
+    if mod(i,10)== 0
+        %         i
+    end
+    sol1 = B + amap(i)*D1;
+    for j = 1 : nptb
+        sol = sol1 + bmap(j)*D2;
+        
+        %computing the roots o
+        if ispoly
+            vp = roots(sol);
+        else
+            vp = eig(sol);
+        end
+        %verifying 
+        if isdiscrete && all(abs(vp)<=1)
+            condsatisf = 1;
+        elseif ~isdiscrete && all(vp <= 0)
+            condsatisf = 1;
+        end
+            
+        if  condsatisf
+            coord(i,j) = 1;
+            objvalD(i,j) = norm(sol-A,normtype);
+            if amap(i) == amax || amap(i) == amin
+                coord(i,j) = 2;
+            end
+            if bmap(j) == bmax || bmap(j) == bmin
+                coord(i,j) = 3;
+            end
+            %             coord = [coord; amap(i) bmap(j)];
+        end
+    end
+end
+for i =1 : npta
+    for j = 1 : nptb
+        if coord(i,j)~= 0
+            if (i == npta || i ==1) ||...
+                    (j==nptb || j==1)
+                border(i,j) = 1;
+            elseif(coord(i-1,j) == 0 || coord(i+1,j) == 0 )||...
+                    (coord(i,j-1) == 0 || coord(i,j+1) == 0)
+                border(i,j)=1;
+            end
+        end
+    end
+end
+
+
+if ~isempty(coord)
+    [I,J] = find(coord(:,:) > 0);
+    u = ((I-1)*(amax-amin)/(npta-1))+ amin;
+    v = ((J-1)*(bmax-bmin)/(nptb-1))+ bmin;
+    x = u + v*cos(theta);
+    y = v*sin(theta);
+
+    [K,L] = find(coord(:,:) == 2);
+    [M,N] = find(coord(:,:) == 3);
+    k = ((K-1)*(amax-amin)/(npta-1))+ amin;
+    l = ((L-1)*(bmax-bmin)/(nptb-1))+ bmin;
+    m = ((M-1)*(amax-amin)/(npta-1))+ amin;
+    n = ((N-1)*(bmax-bmin)/(nptb-1))+ bmin;
+
+    [O,P]=find(border>0);
+    o = ((O-1)*(amax-amin)/(npta-1))+ amin;
+    p = ((P-1)*(bmax-bmin)/(nptb-1))+ bmin;
+    o = o + p*cos(theta);
+    p = p*sin(theta);
+
+    %     %first fig (non-orthonormalized base)
+    %     figure;
+    %     hold on;
+    %     plot(u,v,'.','MarkerSize',4)
+    %     plot(0,0,'.m','MarkerSize',6)
+    %     plot(norm(X,normtype),0,'.m','MarkerSize',6)
+    %     plot(0,-norm(Y,normtype),'.m','MarkerSize',6)
+    %     hold off;
+
+    %second fig (orthonormalized base)
+    figure;
+    hold on;
+    plot(x,y,'.','MarkerSize',4)
+    plot(k+l*cos(theta),l*sin(theta),'.','MarkerSize',6,'MarkerEdgecolor',[0.5 0.2 0.2])
+    plot(m+n*cos(theta),n*sin(theta),'.','MarkerSize',6,'MarkerEdgecolor',[0.5 0.2 0.2])
+    plot(0,0,'.m','MarkerSize',6)
+    plot(norm(X,normtype),0,'.m','MarkerSize',6)
+    plot(-norm(Y,normtype)*cos(theta),-norm(Y,normtype)*sin(theta),'.m','MarkerSize',6)
+
+    [xlim] = get(gca,'Xlim');
+    xoffs = (xlim(2)-xlim(1))/50;
+    [ylim] = get(gca,'Ylim');
+    yoffs = (ylim(2)-ylim(1))/50;
+    text(0+xoffs,0+yoffs,'B','color','m','BackgroundColor','w')
+    text(norm(X,normtype)+xoffs,0+yoffs,'B0','color','m','BackgroundColor','w')
+    text(-norm(Y,normtype)*cos(theta)+xoffs,-norm(Y,normtype)*sin(theta)+yoffs,'A','color','m','BackgroundColor','w')
+
+    hold off;
+    
+%     clf
+    figure;
+    hold on;
+
+    %adding the original points
+    plot(0,0,'.m','MarkerSize',6)
+    plot(norm(X,normtype),0,'.m','MarkerSize',6)
+    plot(-norm(Y,normtype)*cos(theta),-norm(Y,normtype)*sin(theta),'.m','MarkerSize',6)
+
+    %adding the text associated to them
+    text(0+xoffs,0+yoffs,'B','color','m','BackgroundColor','w')
+    text(norm(X,normtype)+xoffs,0+yoffs,'B0','color','m','BackgroundColor','w')
+    text(-norm(Y,normtype)*cos(theta)+xoffs,-norm(Y,normtype)*sin(theta)+yoffs,'A','color','m','BackgroundColor','w')
+
+    %keeping the distances of the stable points only
+    val  = objvalD(sub2ind(size(objvalD),I,J));
+
+    %creating the uniform grid
+    ax = linspace(xlim(1),xlim(2),npta);
+    ay = linspace(ylim(1),ylim(2),nptb);
+    [ax,ay]= meshgrid(ax,ay);
+
+    %interpolating the values of the stable distances on a uniform grid
+    Z = griddata(x,y,val,ax,ay,'cubic');
+
+    %---computing and adding the contour---
+    %noticable level that we want to have vmin,B,B0 and vmax
+    vmin = min(val);
+    vmax = max(val);
+    vb0 = norm(A-B0,normtype);
+    vb  = norm(A-B,normtype);
+    vl = min(vb,vb0);
+    vu = max(vb,vb0);
+
+    %a ratio is computed so that the number of curves is spread evenly outside
+    %of the 4 noticable points.
+    rap1 = ceil(((vl-vmin)/(vmax-vmin))*10); 
+    rap2 = ceil(((vu-vl)/(vmax-vmin))*10);
+    rap3 = ceil(((vmax-vu)/(vmax-vmin))*10);
+    if rap1 < eps, rap1 =1; end;
+    if rap2 < eps, rap2 =1; end;
+    if rap3 < eps, rap3 =1; end;
+
+    %tracing the contours
+    v = [[vmin:(vl-vmin)/rap1:vl],[vl+(vu-vl)/rap2:(vu-vl)/rap2:vu-(vu-vl)/rap2],[vu:(vmax-vu)/rap3:vmax]];
+    [C,h]=contour(ax,ay,Z,v);
+    bd = plot(o,p,'.','markersize',4);
+    
+    hold off;
+
+
+
+
+    %     %fourth plot (creating a real surface on a uniformly sampled grid) of
+    %     %the distance to the instable matrix
+    %     val  = objvalD(sub2ind(size(objvalD),I,J));
+    % %     xmin = min(x)*1.5;
+    % %     xmax = max(x)*1.5;
+    % %     ymin = min(y)*1.5;
+    % %     ymax = max(y)*1.5;
+    %     %creating the uniform grid
+    %     X = linspace(xlim(1),xlim(2),npta);
+    %     Y = linspace(ylim(1),ylim(2),nptb);
+    %     [X,Y]= meshgrid(X,Y);
+    %     %interpolating
+    %     Z = griddata(x,y,val,X,Y,'cubic');
+    %     %plotting
+    %     figure;
+    %     surf(X,Y,Z);
+    %     shading interp
+    %     map = colormap;
+    %     map(1,:) = [1 1 1];
+    %     view(0,90);
+    %
+    %
+    % %     figure;
+    % %     hold on;
+    % %     surf(x,y,objvalD.');
+    % %     shading interp;
+    % %     map = colormap;
+    % %     map(1,:) = [1 1 1];
+    % %     colormap(map);
+    % %     view(0,90);
+    % %     axis tight;
+    % %     gmin = min(objvalD(objvalD>0));
+    % %     gmax = max(max(objvalD));
+    % %     set(gca,'Clim',[0.75*gmin 1.05*gmax]);
+    % %     colorbar
+    % %     hold off;
+else
+    display('> No stable value for alpha and beta')
+end
+
+
+

@@ -1,0 +1,4 @@
+The code of F-X Orban de Xivry has been slightly modified to 
+- be able to set a maximum number of iterations and time limit, 
+- output and display the evolution of the error depending on the time. 
+

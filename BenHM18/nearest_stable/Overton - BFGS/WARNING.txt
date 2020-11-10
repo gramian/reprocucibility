@@ -1,0 +1,4 @@
+The code of Michael Overton to find the nearest stable matrix using HANSO and HANSO have been slightly modified to 
+- be able to set a maximum number of iterations and time limit, 
+- output and display the evolution of the error depending on the time. 
+

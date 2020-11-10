@@ -1,0 +1,105 @@
+function [lambda] = FindLambda(A,B0,Dp,Dq,T,iT,lambda,n,Tol,isdiscrete,verbose)
+%Function FindLambda finds the lagrange multiplier used for the computation
+%of H.
+
+%note: Lambda is initialized at one in StableMain for the first iteration.
+%For the next iterations, the initialization of lambda is set at the
+%last value found multiplied by a factor of 1e-2. This value has proven to
+%be a good trade between large value of lambda (for which it fail as soon
+%as lambda gets smaller than its initial value) and small lambda (for which
+%lambda sometimes diverges (negative or oscillating value)). The initial
+%value plays a role in the evaluation of the function psy which appears to
+%be very sensitive to it.
+
+%If psy is positive then the convergence is proven (you're on the left of
+%the root of the equation). So if psy < 0, lambda quickly gets < 0 so we
+%start again the problem with a lambda >0 but 10 times smaller than the one
+%entered.
+
+%History:
+%Created :  /  /2009
+%Modified:06/05/2010 : added the fact that if psyp<eps and lambda <eps (=10^-16)
+%         18/07/2011 : update for the use of a direct computation method
+%Last update: 18/07/2011
+
+%then lambda is zero
+
+%checking sparsity of DP and Dq;
+if ~(issparse(Dp)&&issparse(Dq))
+    error('No sparse type for the diagonal matrices Dp and/or Dq')
+end
+
+%initialization
+NbIterMax = 100;
+
+%change parameters
+Stable_param;
+
+if ellips_radius >=1 
+    error('FindLambda:TooBigEllipsRadius','The radius of the ellipsoid is set greater or equal to 1 in Stable_param.m')
+end
+
+iter = 0;
+
+lambda_start = lambda;%conserving the first value of lambda
+
+Xbar = T'*(A-B0)*iT';%if P = T*D_p*T' and Q = T*D_q*T' (GSVD method)
+
+% tai = 1000;
+% val = linspace(0,1,tai);
+% for c = 1:tai
+%     res(c) = EvalPsy(Xbar,Dp,Dq,val(c),n);
+% end
+% 
+% plot(val,res)
+
+if ~isdiscrete
+
+    %iterating on lambda
+    psy = 10;%the value given here aims at passing the while criterion
+    psyp = 1;
+    wquit = 0; %enables an early exit from the loop
+    while (abs(-psy/psyp) > Tol)&& ~wquit && (iter < NbIterMax)
+        
+        %evaluating the function and its derivative
+        psy = EvalPsy(Xbar,Dp,Dq,lambda,ellips_radius,n);
+        psyp= EvalPsyp(Xbar,Dp,Dq,lambda,n);
+        if abs(psyp) < eps
+            if verbose
+                warning('    The derivative of psy is zero : divergence of the newton method observed') %#ok<WNTAG>
+            end
+            if abs(lambda)< eps %this case should only occur if the matrix A is already stable instead of being instable
+                lambda =0;
+            end
+            wquit = 1;
+        end
+
+        %actualizing the value of lambda
+        lambda = lambda - psy/psyp;
+        
+        %exiting if lambda gets negative
+        if lambda < 0
+            lambda = lambda_start/10;%we start again the problem with a smaller lambda
+            lambda_start = lambda;
+            if lambda_start < eps % if the root of Psy is indeed negative
+                wquit = 1;
+            end
+        end
+        
+        %actualizing the number of iteration
+        iter = iter+1;
+    end
+    
+    %warning generated if the maximum number of iteration is reached
+    if verbose && (iter == NbIterMax)
+        warning('-> Maximal number of iteration(%i) reached in FindLambda.m. At the last iteration the change in lambda was still of %5.3e',NbIterMax,-psy/psyp); %#ok<WNTAG>
+    end    
+%%    
+else
+
+    %No forehand computation of lambda in the discrete case
+    %display('-> Discrete case is not implemented yet')
+%%
+end
+
+

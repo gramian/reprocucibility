@@ -8,6 +8,8 @@ The experiment source codes can be tested via the `RUNME.m` in MATLAB or OCTAVE,
 
 ## Table of Contents
 
+* **[BenHM18]** P. Benner, C. Himpe, T. Mitchell: "[**On Reduced Input-Output Dynamic Mode Decomposition**](BenHM18.pdf)", 2018. `doi:10.1007/s10444-018-9592-x`
+
 * **[Him18]** C. Himpe: "[**emgr - The Empirical Gramian Framework**](Him18.pdf)", 2018. `doi:10.3390/a11070091`
 
 * **[HimLRetal17]** C. Himpe, T. Leibner, S. Rave, J. Saak: "**Fast Low-Rank Empirical Cross Gramians**", 2017. [`doi:10.1002/pamm.201710388`](https://doi.org/10.1002/pamm.201710388)

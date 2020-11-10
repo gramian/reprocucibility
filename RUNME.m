@@ -15,6 +15,8 @@ function RUNME(id)
                'HimLRetal17', ... % Fast Low-Rank Empirical Cross Gramians
                ...
                'Him18', ...       % emgr - Empirical Gramian Framework
+               ...
+               'BenHM18', ...     % On Reduced Input-Output Dynamic Mode Decomposition
                ... % tbc
               };
 
@@ -96,7 +98,15 @@ function RUNME(id)
             cd('Him18');
             runme = @RUNME;
             cd('..');
-            runme();        
+            runme();
+
+        case 'BenHM18'
+            cd('BenHM18');
+            addpath('GRANSO')
+            runme = @RUNME;
+            cd('..');
+            runme(0);
+            runme(1);
 
     end%switch
 

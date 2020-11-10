@@ -1,0 +1,75 @@
+function [F,y] = MatDirectFindF(A,B0,Dp,Dq,T,iT,n,mu,isdiscrete,verbose)
+%[F,y] = MatDirectFindF(A,B0,Dp,Dq,T,iT,isdiscrete) constructs the matrix F
+% and vectore y of the system [I+\lambda F]*h = y. The system is built
+% using kronecker products.
+%
+%Input : A         : The unstable matrix
+%        B0        : The last stable iterate
+%        Dp,Dq     : The diagonal matrices of P and Q
+%        T,iT      : The transformation from P to Dp and Q to D
+%        n         : the size of the matrix A
+%        mu        : The central path parameter
+%        isdiscrete: 1 if the system is in discrete-time, 0 otherwise
+%        verbose   : if 1, will print some information when needed.
+%
+%Output :F  : The matrix of the system of equations.
+%        y  : the vector of (A-X)
+%
+%History : 18/07/2011 : Creation
+%          03/08/2011 : Bug correction : in writing the kronecker product
+%                       vec(AXB) = kron(B.',A)*vec(X) one must write the
+%                       ".'" even if the matrix B is hermitian !!
+%          04/06/2012 : Insertion of a barrier function in the objective
+%                       function so that convergence can be guaranteed.
+%          05/07/2012 : The discrete case is modified, the Lyapunov
+%                       operator is transformed into an LMI. Computation
+%                       are therefore easier.
+%last modified : 05/07/2012
+
+P = T*Dp*T';%Dp = eye(n)
+iQ = iT'*inv(Dq)*iT;
+iQ = (iQ+iQ')/2;
+
+if ~isdiscrete
+    %construction of the system F*x=y
+    fterm = kron((P*iQ*P).',iQ);
+    sterm = krontr((iQ*P).',iQ*P);%krontr works for real matrices,
+                              %it does not takethe conjugate into account
+    Frealreal = real(fterm + sterm);% real(F)*vec(Hreal)
+    Fimagimag = - imag(fterm - sterm);% i*imag(F)*i*vec(Himag) = - imag(F)*vec(Himag)
+    Fimagreal = imag(fterm+sterm); % (i*)imag(F)*vec(Hreal)
+    Frealimag = real(fterm-sterm); % (i*)real(F)*vec(Himag)
+    
+    %additional term independent of H
+    Addterm = 2*mu*iQ*P;
+    
+else
+%     fterm = kron((P*B0'*iQ*B0*P).',iQ);
+%     sterm = krontr((iQ*B0*P).',iQ*B0*P);
+%     tterm = kron(P.',iQ);
+%     Frealreal = real(fterm+ sterm +tterm);% real(F)*vec(Hreal)
+%     Fimagimag = - imag(fterm-sterm +tterm );% i*imag(F)*i*vec(Himag) = - imag(F)*vec(Himag)
+%     Fimagreal = imag(fterm+sterm+tterm); % (i*)imag(F)*vec(Hreal)
+%     Frealimag = real(fterm-sterm+tterm); % (i*)real(F)*vec(Himag)
+%     Addterm= zeros(size(P));
+    iQX = iQ*B0;
+    iQXP = iQX*P;
+    PXsiQXP = P+ P*B0'*iQXP;
+    fterm = krontr((PXiQ).',PXiQ);
+    sterm = kron(iQ.',PXsiQXP);
+    
+    Frealreal = real(fterm+ sterm );% real(F)*vec(Hreal)
+    Fimagimag = - imag(-fterm+sterm );% i*imag(F)*i*vec(Himag) = - imag(F)*vec(Himag)
+    Fimagreal = imag(fterm+sterm); % (i*)imag(F)*vec(Hreal)
+    Frealimag = real(-fterm+sterm); % (i*)real(F)*vec(Himag)
+    
+    %Additional term independent of H
+    Addterm = mu*(2*PXiQ);%=-2*P*(-XiQ)
+    
+end
+
+%constructing a system with separate real and imaginary parts
+F = [Frealreal Fimagimag; Fimagreal Frealimag];
+F = F + F'; %(=2*F) the constant 2 is part of the hessian F, but at the same F must be perfectly symmetric
+ytemp = vec(A-B0-Addterm);
+y = [real(ytemp); imag(ytemp)];
