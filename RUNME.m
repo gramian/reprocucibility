@@ -17,6 +17,8 @@ function RUNME(id)
                'Him18', ...       % emgr - Empirical Gramian Framework
                ...
                'BenHM18', ...     % On Reduced Input-Output Dynamic Mode Decomposition
+               ...
+               'BenH19',
                ... % tbc
               };
 
@@ -107,6 +109,12 @@ function RUNME(id)
             cd('..');
             runme(0);
             runme(1);
+
+        case 'BenH19'
+            cd('BenH19');
+            runme = @RUNME;
+            cd('..');
+            runme();
 
     end%switch
 
