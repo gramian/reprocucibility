@@ -18,7 +18,8 @@ function RUNME(id)
                ...
                'BenHM18', ...     % On Reduced Input-Output Dynamic Mode Decomposition
                ...
-               'BenH19',
+               'BenH19', ...      % Cross-Gramian-Based Dominant Subspaces
+               'GruHS19', ...     % On Empirical System Gramians
                ... % tbc
               };
 
@@ -77,19 +78,19 @@ function RUNME(id)
             nonsym(5);
 
         case 'FehHHetal16'
-            cd('FehHHetal16');
+            cd(id);
             runme = @RUNME;
             cd('..');
             runme();
 
         case 'HimO17'
-            cd('HimO17');
+            cd(id);
             runme = @RUNME;
             cd('..');
             runme();
 
         case 'HimLRetal17'
-            cd('HimLRetal17');
+            cd(id);
             runme = @RUNME;
             plotme = @PLOTME;
             cd('..');
@@ -97,13 +98,13 @@ function RUNME(id)
             plotme();
 
         case 'Him18'
-            cd('Him18');
+            cd(id);
             runme = @RUNME;
             cd('..');
             runme();
 
         case 'BenHM18'
-            cd('BenHM18');
+            cd(id);
             addpath('GRANSO')
             runme = @RUNME;
             cd('..');
@@ -111,7 +112,13 @@ function RUNME(id)
             runme(1);
 
         case 'BenH19'
-            cd('BenH19');
+            cd(id);
+            runme = @RUNME;
+            cd('..');
+            runme();
+
+        case 'GruHS19'
+            cd(id);
             runme = @RUNME;
             cd('..');
             runme();

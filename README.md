@@ -9,6 +9,7 @@ The experiment source codes can be tested via the `RUNME.m` in MATLAB or OCTAVE,
 ## Table of Contents
 
 * **[BenH19]** P. Benner, C. Himpe: "[**Cross-Gramian-Based Dominant Subspaces**](BenH19.pdf)", 2019. `doi:10.1007/s10444-019-09724-7`
+* **[GruHS19]** S. Grundel, C. Himpe, J. Saak: "[**On Empirical System Gramians**](GruHS19.pdf)", 2019. `doi:10.1002/pamm.201900006`
 
 * **[BenHM18]** P. Benner, C. Himpe, T. Mitchell: "[**On Reduced Input-Output Dynamic Mode Decomposition**](BenHM18.pdf)", 2018. `doi:10.1007/s10444-018-9592-x`
 
